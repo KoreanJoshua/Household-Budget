@@ -487,12 +487,12 @@ function renderBook(){
   $('budEdit').textContent=budOpen?'계좌 고르기 닫기':'생활 예산에 넣을 계좌 고르기';
   $('budPickBook').hidden=!budOpen;
   $('budPickBook').innerHTML=`<p class="note" style="margin-top:0">체크한 계좌만 위의 남은 돈과 하루·주간 예산에 들어가요. 금액은 '${esc(plan.name)}' 플랜에서 가져와요.</p>`+names.map(n=>`<label class="chk"><input type="checkbox" data-bud="${esc(n)}"${S.bud.includes(n)?' checked':''}> ${esc(n)} <span class="note num" style="margin:0 0 0 auto">${pt.has(n)?won(pt.get(n)):'플랜에 없음'}</span></label>`).join('');
-  const cats=[...new Set([...pt.keys(),...byCat.keys()])];
+  const cats=S.bud.filter(c=>pt.has(c)||byCat.has(c));
   $('budList').innerHTML=cats.length?cats.map(c=>{
     const b=pt.get(c)||0,u=byCat.get(c)||0,l=b-u,isB=S.bud.includes(c);
-    return `<div class="acc"><div class="t"><span>${esc(c)}${isB?'<span class="tag">생활 예산</span>':''}</span><b class="${l<0?'neg':''}">${won(l)}</b></div>
-      <div class="s">이번 달 넣은 돈 <span class="num">${won(b)}</span> · 쓴 돈 <span class="num">${won(u)}</span>${b&&(isB||u)?` · ${Math.round(u/b*100)}% 사용`:''}</div>
-      ${b&&(isB||u)?`<div class="meter${u>b?' over':''}"><i style="width:${Math.min(100,u/b*100)}%"></i></div>`:''}</div>`}).join(''):'<p class="note">월급 나누기 플랜에 항목이 없어요.</p>';
+    return `<div class="acc"><div class="t"><span>${esc(c)}</span><b class="${l<0?'neg':''}">${won(l)}</b></div>
+      <div class="s">이번 달 넣은 돈 <span class="num">${won(b)}</span> · 쓴 돈 <span class="num">${won(u)}</span>${b?` · ${Math.round(u/b*100)}% 사용`:''}</div>
+      ${b?`<div class="meter${u>b?' over':''}"><i style="width:${Math.min(100,u/b*100)}%"></i></div>`:''}</div>`}).join(''):'<p class="note">생활 예산에 넣은 계좌가 없어요. 위 버튼으로 골라 주세요.</p>';
   $('fixBook').innerHTML=S.fixed.length?S.fixed.map(f=>{const done=S.fd[f.id+'|'+month];
     return `<button class="fxr" data-fixedit="${f.id}"><span>${esc(f.name||f.cat)}</span><span class="a num">${f.t==='in'?'+':'-'}${won(f.a)}</span><span class="c">${esc(f.cat)} · 매달 ${f.day}일 · ${done?'이번 달 기록됨':'아직 안 됨'}</span></button>`}).join(''):'<p class="note">통신비, 구독료, 월급처럼 매달 같은 날 오가는 돈을 등록해 두세요.</p>';
   const days=new Map();for(const t of [...tx].sort((a,b)=>b.d.localeCompare(a.d)||(b.at||0)-(a.at||0))){if(!days.has(t.d))days.set(t.d,[]);days.get(t.d).push(t)}
