@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="어따썼니">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -77,7 +77,7 @@ tr.tot td{font-weight:800;padding-top:12px}
 .row{display:grid;grid-template-columns:10px minmax(0,1fr) 2.8em minmax(0,7.2em) 36px;gap:8px;align-items:center;min-height:54px;border-bottom:1px solid var(--line)}
 .row:last-child{border-bottom:0}
 .row .dot{width:10px;height:10px;border-radius:3px;background:var(--c,var(--soft))}
-.row input{border:0;background:transparent;padding:0 4px;min-height:44px;font-size:15px}
+.row input{border:0;background:transparent;padding:0 4px;min-height:44px;font-size:16px}
 .row input[data-f=n]{font-weight:500}
 .row input.amt{font-weight:700;font-size:16px}
 .row input:focus{background:var(--soft2)}
@@ -154,7 +154,8 @@ details.dt summary::-webkit-details-marker{display:none}details.dt summary::afte
 /* 입력 시트 */
 .sheet{position:fixed;inset:0;background:rgba(13,18,32,.4);display:none;z-index:40;align-items:flex-end;justify-content:center}
 .sheet.open{display:flex}
-.sheet .in{background:var(--card);width:100%;max-width:640px;border-radius:28px 28px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom));max-height:94vh;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.sheet .in input,.sheet .in select{font-size:16px}.sheet .in .amtBig{font-size:38px}
+.sheet .in{overflow-x:hidden;background:var(--card);width:100%;max-width:640px;border-radius:28px 28px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom));max-height:94vh;overflow:auto;display:flex;flex-direction:column;gap:14px}
 .grab{width:40px;height:5px;border-radius:3px;background:var(--line);align-self:center;flex:none}
 .shead{display:flex;justify-content:space-between;align-items:center}.shead .seg{margin:0}.shead .seg button{padding:0 18px;flex:none}
 .x{width:44px;height:44px;border:0;background:transparent;padding:0;color:var(--mut);display:flex;align-items:center;justify-content:center}
@@ -165,7 +166,7 @@ details.dt summary::-webkit-details-marker{display:none}details.dt summary::afte
 .quick{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.quick button{min-height:40px;padding:0;border:0;border-radius:12px;background:var(--soft);color:var(--acc);font:700 13px Inter,"Noto Sans KR",sans-serif}
 .quick button.ghost{background:var(--soft2);color:var(--mut);font-weight:500}
 .dchips{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.dchips button{min-height:38px;padding:0 14px;border-radius:999px;font-size:13px}
-.dchips input{width:auto;flex:1;min-width:8.5em;border:0;background:transparent;color:var(--mut);font-size:14px;text-align:right;padding:0}
+.dchips input{width:auto;flex:1;min-width:8.5em;border:0;background:transparent;color:var(--mut);font-size:16px;text-align:right;padding:0}
 .chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .chips button{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 2px;min-height:68px;border:2px solid transparent;border-radius:16px;background:var(--soft2);font-size:12px;color:var(--ink);overflow:hidden}
 .chips button span.l{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -177,6 +178,7 @@ details.dt summary::-webkit-details-marker{display:none}details.dt summary::afte
 .accrow{display:flex;align-items:center;gap:10px}.accrow>span{font-size:13px;color:var(--mut);flex:none;width:2.4em}
 .accs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1}.accs button{flex:none;min-height:36px;border-radius:999px;font-size:13px;padding:0 12px}
 .accs button.on{background:var(--acc);border-color:var(--acc);color:var(--accInk);font-weight:700}
+.newcat{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}.newcat input{background:var(--soft2)}.newcat button{padding:0 18px}
 .cdel{display:flex;align-items:center;gap:8px;background:light-dark(#FFF4EC,#3A2414);border-radius:14px;padding:8px 8px 8px 14px;font-size:14px}.cdel span{flex:1;color:var(--ink)}.cdel button{min-height:38px;padding:0 14px}
 button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-weight:700}
 .chips button.newc{border:2px dashed var(--line);background:transparent;color:var(--mut)}
@@ -364,7 +366,7 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
     <div class="chips" id="eCats"></div>
     <p class="note" style="margin:-6px 2px 0;font-size:12px">카테고리를 꾹 누르면 지울 수 있어요</p>
     <div class="cdel" id="eCatDel" hidden><span id="eCatDelMsg"></span><button id="eCatDelNo">취소</button><button id="eCatDelOk" class="warnb">삭제</button></div>
-    <div class="row r3" id="eNewCat" hidden style="border:0;min-height:0"><input id="eNewCatIn" placeholder="새 카테고리 이름" aria-label="새 카테고리 이름" style="border:1px solid var(--line);padding:0 12px"><button id="eNewCatOk" style="grid-column:span 2" class="red">추가</button></div>
+    <div class="newcat" id="eNewCat" hidden><input id="eNewCatIn" placeholder="새 카테고리 이름" aria-label="새 카테고리 이름"><button id="eNewCatOk" class="red">추가</button></div>
     <div class="accrow" id="eAccRow"><span>계좌</span><div class="accs" id="eAccs"></div></div>
     <label class="memo"><span>메모</span><input id="eMemo" placeholder="어디서 썼어요?"></label>
     <div class="dchips"><button data-day="0">오늘</button><button data-day="-1">어제</button><button data-day="-2">그저께</button><input id="eDate" type="date" aria-label="날짜"></div>
