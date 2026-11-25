@@ -172,6 +172,13 @@ details.dt summary::-webkit-details-marker{display:none}details.dt summary::afte
 .chips button svg{width:22px;height:22px;color:var(--mut)}
 .chips button .ini{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--mut)}
 .chips button.on{border-color:var(--acc);background:var(--soft);font-weight:700}.chips button.on svg,.chips button.on .ini{color:var(--acc)}
+.chips button{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.chips button.press{transform:scale(.94);transition:transform .25s}
+.accrow{display:flex;align-items:center;gap:10px}.accrow>span{font-size:13px;color:var(--mut);flex:none;width:2.4em}
+.accs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1}.accs button{flex:none;min-height:36px;border-radius:999px;font-size:13px;padding:0 12px}
+.accs button.on{background:var(--acc);border-color:var(--acc);color:var(--accInk);font-weight:700}
+.cdel{display:flex;align-items:center;gap:8px;background:light-dark(#FFF4EC,#3A2414);border-radius:14px;padding:8px 8px 8px 14px;font-size:14px}.cdel span{flex:1;color:var(--ink)}.cdel button{min-height:38px;padding:0 14px}
+button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-weight:700}
 .chips button.newc{border:2px dashed var(--line);background:transparent;color:var(--mut)}
 .memo{display:flex;align-items:center;gap:10px;background:var(--soft2);border-radius:14px;padding:0 14px;min-height:50px}
 .memo span{font-size:13px;color:var(--mut);flex:none}.memo input{border:0;background:transparent;padding:0}.memo input:focus-visible{outline:0}.memo:focus-within{box-shadow:0 0 0 2px var(--acc)}
@@ -355,7 +362,10 @@ details.dt summary::-webkit-details-marker{display:none}details.dt summary::afte
     <label class="amtL"><span id="eAmtLab">얼마 썼어요?</span><span class="amtW"><input id="eAmt" class="amtBig" inputmode="numeric" placeholder="0" aria-label="금액"><b>원</b></span></label>
     <div class="quick" id="eQuick"><button data-q="1000">+1천</button><button data-q="5000">+5천</button><button data-q="10000">+1만</button><button data-q="50000">+5만</button><button data-q="0" class="ghost">지움</button></div>
     <div class="chips" id="eCats"></div>
+    <p class="note" style="margin:-6px 2px 0;font-size:12px">카테고리를 꾹 누르면 지울 수 있어요</p>
+    <div class="cdel" id="eCatDel" hidden><span id="eCatDelMsg"></span><button id="eCatDelNo">취소</button><button id="eCatDelOk" class="warnb">삭제</button></div>
     <div class="row r3" id="eNewCat" hidden style="border:0;min-height:0"><input id="eNewCatIn" placeholder="새 카테고리 이름" aria-label="새 카테고리 이름" style="border:1px solid var(--line);padding:0 12px"><button id="eNewCatOk" style="grid-column:span 2" class="red">추가</button></div>
+    <div class="accrow" id="eAccRow"><span>계좌</span><div class="accs" id="eAccs"></div></div>
     <label class="memo"><span>메모</span><input id="eMemo" placeholder="어디서 썼어요?"></label>
     <div class="dchips"><button data-day="0">오늘</button><button data-day="-1">어제</button><button data-day="-2">그저께</button><input id="eDate" type="date" aria-label="날짜"></div>
     <div class="opts">
@@ -482,6 +492,7 @@ migrate(S);
 const P=()=>S.plans.find(p=>p.id===S.cur)||S.plans[0];
 let view='book',month=periodOf(today()),budOpen=false,fixOpen=false,txQ='',payOpen=null;
 const accOf=c=>(S.catAcc&&S.catAcc[c])||c;
+const accTx=t=>t.acc||accOf(t.cat);
 try{const v=localStorage.getItem('wolgeup-view');if(v&&$('v-'+v))view=v}catch(e){}
 
 let ref=null,saveT=null;
@@ -503,7 +514,7 @@ function runFixed(){
       const key=f.id+'|'+m;if(S.fd[key])continue;
       const day=Math.min(f.day,lastDay(m));
       if(m===cm&&day>cd)continue;
-      S.tx.push({id:uid(),d:m+'-'+pad(day),t:f.t,a:f.a,cat:f.cat,memo:f.name,fx:f.id});S.fd[key]=1;n++;
+      S.tx.push(Object.assign({id:uid(),d:m+'-'+pad(day),t:f.t,a:f.a,cat:f.cat,memo:f.name,fx:f.id},f.acc?{acc:f.acc}:{}));S.fd[key]=1;n++;
     }
   }
   return n;
@@ -586,7 +597,7 @@ function renderBook(){
   const out=tx.filter(t=>t.t==='out'),inc=tx.filter(t=>t.t==='in');
   const sOut=out.reduce((s,t)=>s+t.a,0),sIn=inc.reduce((s,t)=>s+t.a,0);
   const byAcc=new Map(),br=new Map();
-  for(const t of out){const a=accOf(t.cat);byAcc.set(a,(byAcc.get(a)||0)+t.a);if(!br.has(a))br.set(a,new Map());const m=br.get(a);m.set(t.cat,(m.get(t.cat)||0)+t.a)}
+  for(const t of out){const a=accTx(t);byAcc.set(a,(byAcc.get(a)||0)+t.a);if(!br.has(a))br.set(a,new Map());const m=br.get(a);m.set(t.cat,(m.get(t.cat)||0)+t.a)}
   const budCats=S.bud.filter(c=>pt.has(c));
   const budTot=budCats.reduce((s,c)=>s+pt.get(c),0),budUsed=budCats.reduce((s,c)=>s+(byAcc.get(c)||0),0);
   const left=budTot-budUsed;
@@ -627,7 +638,7 @@ function renderTxList(){
   $('txList').innerHTML=days.size?[...days.entries()].map(([d,l])=>{
     const dt=dOf(d);const o=l.filter(t=>t.t==='out').reduce((s,t)=>s+t.a,0);
     return `<div class="day"><h3><span>${+d.slice(5,7)}/${+d.slice(8)} ${WD[dt.getDay()]}</span><span class="num">${o?'-'+won(o):''}</span></h3>`+
-      l.map(t=>`<button class="tx" data-tx="${t.id}">${icTile(t.cat)}<span class="m">${esc(t.memo||t.cat)}</span><span class="a num${t.t==='in'?' in':''}">${t.t==='in'?'+':'-'}${won(t.a)}</span><span class="c">${esc(t.cat)}${accOf(t.cat)!==t.cat&&t.t==='out'?' · '+esc(accOf(t.cat)):''}${t.fx?' · 고정':''}</span></button>`).join('')+'</div>'}).join('')
+      l.map(t=>`<button class="tx" data-tx="${t.id}">${icTile(t.cat)}<span class="m">${esc(t.memo||t.cat)}</span><span class="a num${t.t==='in'?' in':''}">${t.t==='in'?'+':'-'}${won(t.a)}</span><span class="c">${esc(t.cat)}${accTx(t)!==t.cat&&t.t==='out'?' · '+esc(accTx(t)):''}${t.fx?' · 고정':''}</span></button>`).join('')+'</div>'}).join('')
     :(q?'<div class="empty">찾는 내역이 없어요.</div>':'<div class="empty">아직 기록이 없어요.<br>오른쪽 아래 + 를 눌러 첫 내역을 적어 보세요.</div>');
 }
 
@@ -635,7 +646,7 @@ function renderPace(out,budCats,budTot,budUsed){
   const dim=pSpan(month),td=today(),isCur=month===periodOf(td),ps=pStart(month),pe=pEnd(month);
   if(!budTot){$('paceSec').hidden=true;return}
   $('paceSec').hidden=false;
-  const daily=budTot/dim,bo=out.filter(t=>budCats.includes(accOf(t.cat)));
+  const daily=budTot/dim,bo=out.filter(t=>budCats.includes(accTx(t)));
   const sumR=(a,b)=>bo.filter(t=>t.d>=a&&t.d<=b).reduce((s,t)=>s+t.a,0);
   const card=(k,bud,used)=>{const p=bud?Math.round(used/bud*100):0,o=used>bud;
     return `<div class="pc"><div class="h"><span>${k}</span><b class="num${o?' neg':''}">${p}%</b></div><div class="v num">${won(used)}<small> / ${won(bud)}</small></div><div class="meter${o?' over':''}"><i style="width:${Math.min(100,p)}%"></i></div></div>`};
@@ -702,12 +713,12 @@ function openSheet(tx,kind){
   kind=kind||'tx';favEdit=false;
   const base={id:uid(),t:'out',a:0,cat:(S.lastCat.out&&S.cats.out.includes(S.lastCat.out))?S.lastCat.out:(S.cats.out[0]||'기타'),memo:'',d:month===periodOf(today())?today():pStart(month)};
   if(kind==='fixed'){
-    const f=tx;E=f?{kind,edit:true,id:f.id,t:f.t,a:f.a,cat:f.cat,memo:f.name,d:today().slice(0,8)+pad(Math.min(f.day,lastDay(today().slice(0,7))))}:{...base,kind,cat:S.cats.out.includes('고정비')?'고정비':base.cat};
-  }else E=tx?{...tx,kind,edit:true}:{...base,kind};
+    const f=tx;E=f?{kind,edit:true,id:f.id,t:f.t,a:f.a,cat:f.cat,acc:f.acc,accManual:!!f.acc,memo:f.name,d:today().slice(0,8)+pad(Math.min(f.day,lastDay(today().slice(0,7))))}:{...base,kind,cat:S.cats.out.includes('고정비')?'고정비':base.cat};
+  }else E=tx?{...tx,kind,edit:true,accManual:!!tx.acc}:{...base,kind};
   $('eTitle').textContent=kind==='fixed'?'고정 항목':(E.edit?'수정 중':'');
   $('eAmt').value=E.a?won(E.a):'';$('eMemo').value=E.memo||'';$('eDate').value=E.d;$('eFav').checked=false;$('eRep').checked=false;
   $('eDel').hidden=!E.edit;$('eFavL').hidden=E.edit||kind==='fixed';$('eRepL').hidden=E.edit||kind==='fixed';$('eFixNote').hidden=kind!=='fixed';
-  $('eNewCat').hidden=true;
+  $('eNewCat').hidden=true;$('eCatDel').hidden=true;
   sheetType();$('sheet').classList.add('open');
   clearTimeout(focusT);focusT=setTimeout(()=>{if(!$('sheet').contains(document.activeElement)||document.activeElement===document.body)$('eAmt').focus()},50);
 }
@@ -715,7 +726,12 @@ function sheetType(){
   $('eOut').classList.toggle('on',E.t==='out');$('eIn').classList.toggle('on',E.t==='in');
   if(!S.cats[E.t].includes(E.cat))E.cat=(S.lastCat[E.t]&&S.cats[E.t].includes(S.lastCat[E.t]))?S.lastCat[E.t]:(S.cats[E.t][0]||'기타');
   $('eCats').innerHTML=S.cats[E.t].map(c=>{const i=catIc(c);return `<button data-ecat="${esc(c)}" class="${c===E.cat?'on':''}">${i.k?i.html:`<span class="ini">${i.html}</span>`}<span class="l">${esc(c)}</span></button>`}).join('')+`<button data-ecatnew class="newc">${svgI('dots').replace(ICONS.dots,'<path d="M12 5v14M5 12h14"/>')}<span class="l">추가</span></button>`;
-  $('eAmtLab').textContent=E.t==='out'?'얼마 썼어요?':'얼마 받았어요?';saveLabel();
+  $('eAmtLab').textContent=E.t==='out'?'얼마 썼어요?':'얼마 받았어요?';
+  const accList=[...new Set([...planTotals(planFor(periodOf(E.d||today()))).keys(),accOf(E.cat)])];
+  if(!E.accManual||!E.acc)E.acc=accOf(E.cat);
+  $('eAccRow').hidden=E.t!=='out';
+  $('eAccs').innerHTML=accList.map(a=>`<button data-eacc="${esc(a)}" class="${a===E.acc?'on':''}">${esc(a)}</button>`).join('');
+  saveLabel();
   const fv=S.fav.filter(f=>f.t===E.t),show=!E.edit&&E.kind==='tx'&&fv.length;
   $('eFavs').innerHTML=show?fv.map(f=>`<button data-qfav="${S.fav.indexOf(f)}" class="${favEdit?'x':''}">${favEdit?'× ':''}${esc(f.memo||f.cat)}<span class="num">${won(f.a)}</span></button>`).join('')+`<button data-favedit class="ghost">${favEdit?'완료':'편집'}</button>`:'';
   $('eFavs').hidden=!show;
@@ -725,7 +741,23 @@ function addCat(){
   if(!S.cats[E.t].includes(n)){S.cats[E.t].push(n);if(E.t==='out'&&n!=='생활비'&&planTotals(planFor(month)).has('생활비'))S.catAcc[n]='생활비'}
   E.cat=n;$('eNewCatIn').value='';$('eNewCat').hidden=true;save();sheetType();toast(`'${n}' 카테고리를 추가했어요`);
 }
-function saveLabel(){if(!E)return;const a=parse($('eAmt').value);$('eSave').textContent=E.kind==='fixed'?(E.edit?'고정 항목 저장':'고정 항목 추가'):(a?`${E.cat} ${won(a)}원 ${E.edit?'저장':'기록'}`:(E.edit?'저장':'기록'));}
+function saveLabel(){if(!E)return;const a=parse($('eAmt').value);$('eSave').textContent=E.kind==='fixed'?(E.edit?'고정 항목 저장':'고정 항목 추가'):(a?`${E.cat} ${won(a)}원 ${E.edit?'저장':'기록'}${E.t==='out'&&E.acc&&E.acc!==accOf(E.cat)?` · ${E.acc}`:''}`:(E.edit?'저장':'기록'));}
+let lpT=null,lpFired=false,lpCat=null;
+const sheetCats=$('eCats');
+sheetCats.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-ecat]');if(!b||!E)return;lpFired=false;clearTimeout(lpT);b.classList.add('press');
+  lpT=setTimeout(()=>{lpFired=true;b.classList.remove('press');lpCat=b.dataset.ecat;try{navigator.vibrate&&navigator.vibrate(15)}catch(x){}
+    $('eCatDelMsg').textContent=`'${lpCat}' 카테고리를 지울까요? 기존 내역은 그대로 남아요.`;$('eCatDel').hidden=false},550)});
+const lpCancel=()=>{clearTimeout(lpT);sheetCats.querySelectorAll('.press').forEach(x=>x.classList.remove('press'))};
+for(const ev of ['pointerup','pointerleave','pointercancel'])sheetCats.addEventListener(ev,lpCancel);
+sheetCats.addEventListener('pointermove',e=>{if(Math.abs(e.movementX)+Math.abs(e.movementY)>6)lpCancel()});
+sheetCats.addEventListener('contextmenu',e=>e.preventDefault());
+sheetCats.addEventListener('click',e=>{if(lpFired){e.stopPropagation();e.preventDefault();lpFired=false}},true);
+function delCat(){
+  const k=E.t,c=lpCat,i=S.cats[k].indexOf(c);$('eCatDel').hidden=true;if(i<0)return;
+  if(S.cats[k].length<2){toast('카테고리는 하나 이상 있어야 해요');return}
+  S.cats[k].splice(i,1);if(E.cat===c)E.cat=S.cats[k][0];save();sheetType();
+  toast(`'${c}' 카테고리를 지웠어요`,()=>{S.cats[k].splice(i,0,c);save();if(E)sheetType()});
+}
 function closeSheet(){$('sheet').classList.remove('open');E=null}
 function commit(tx,msg){
   const i=S.tx.findIndex(t=>t.id===tx.id);const prev=i>=0?S.tx[i]:null;
@@ -739,11 +771,11 @@ function saveSheet(){
   if(E.kind==='fixed'){
     let f=S.fixed.find(x=>x.id===E.id);const isNew=!f;
     if(isNew){f={id:E.id,since:d.slice(0,7)};S.fixed.push(f)}
-    Object.assign(f,{t:E.t,a,cat:E.cat,name:memo,day:+d.slice(8)});
+    Object.assign(f,{t:E.t,a,cat:E.cat,name:memo,day:+d.slice(8)});if(E.t==='out'&&E.acc&&E.acc!==accOf(E.cat))f.acc=E.acc;else delete f.acc;
     closeSheet();const n=runFixed();save();render();
     toast(isNew?`고정 항목을 추가했어요${n?' · 이번 달 것도 기록했어요':''}`:'고정 항목을 고쳤어요. 이미 기록된 내역은 그대로예요');return;
   }
-  const tx={id:E.id,t:E.t,a,cat:E.cat,memo,d,at:E.at||Date.now()};S.lastCat[E.t]=E.cat;if(E.fx)tx.fx=E.fx;
+  const tx={id:E.id,t:E.t,a,cat:E.cat,memo,d,at:E.at||Date.now()};S.lastCat[E.t]=E.cat;if(E.t==='out'&&E.acc&&E.acc!==accOf(E.cat))tx.acc=E.acc;if(E.fx)tx.fx=E.fx;
   if($('eFav').checked&&!E.edit)S.fav.push({t:tx.t,a:tx.a,cat:tx.cat,memo:tx.memo});
   if($('eRep').checked&&!E.edit){const f={id:uid(),name:memo,a,day:+d.slice(8),t:tx.t,cat:tx.cat,since:d.slice(0,7)};S.fixed.push(f);S.fd[f.id+'|'+d.slice(0,7)]=1;tx.fx=f.id}
   const ed=E.edit;closeSheet();commit(tx,ed?'수정했어요':`${tx.cat} ${won(a)}원 기록했어요`);
@@ -820,10 +852,13 @@ document.addEventListener('click',e=>{
   if(E){
     if(t.id==='eOut'||t.id==='eIn'){E.t=t.id==='eOut'?'out':'in';sheetType();return}
     if(t.dataset.ecat!==undefined){E.cat=t.dataset.ecat;sheetType();return}
+    if(t.dataset.eacc!==undefined){E.acc=t.dataset.eacc;E.accManual=E.acc!==accOf(E.cat);sheetType();return}
     if(t.dataset.q!==undefined){const q=+t.dataset.q;const v=q?parse($('eAmt').value)+q:0;$('eAmt').value=v?won(v):'';saveLabel();return}
     if(t.dataset.day!==undefined){$('eDate').value=addD(today(),+t.dataset.day);return}
     if(t.hasAttribute('data-ecatnew')){clearTimeout(focusT);$('eNewCat').hidden=false;$('eNewCatIn').focus();return}
     if(t.id==='eNewCatOk'){addCat();return}
+    if(t.id==='eCatDelOk'){delCat();return}
+    if(t.id==='eCatDelNo'){$('eCatDel').hidden=true;return}
     if(t.hasAttribute('data-favedit')){favEdit=!favEdit;sheetType();return}
     if(t.dataset.qfav!==undefined&&favEdit){const i=+t.dataset.qfav;const [f]=S.fav.splice(i,1);save();sheetType();toast(`'${f.memo||f.cat}' 자주 쓰는 내역에서 뺐어요`,()=>{S.fav.splice(i,0,f);save();if(E)sheetType()});return}
     if(t.dataset.qfav!==undefined){const f=S.fav[+t.dataset.qfav];const d=$('eDate').value||today();closeSheet();commit({id:uid(),t:f.t,a:f.a,cat:f.cat,memo:f.memo,d,at:Date.now()},`${f.memo||f.cat} ${won(f.a)}원 기록했어요`);return}
