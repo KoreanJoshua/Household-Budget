@@ -190,6 +190,7 @@ details.dt summary::-webkit-details-marker{display:none}details.dt summary::afte
 .ir .meta select{width:auto;min-height:32px;font-size:16px;padding:0 8px;border-radius:10px}
 .ir .meta button{min-height:32px;padding:0 10px;font-size:12px;border-radius:999px}
 .ir.dup{opacity:.55}
+.ir .meta input.idate{width:auto;min-height:32px;font-size:16px;padding:0 6px;border-radius:10px;background:var(--soft2);border-color:transparent;color:var(--ink)}
 .cdel{display:flex;align-items:center;gap:8px;background:light-dark(#FFF4EC,#3A2414);border-radius:14px;padding:8px 8px 8px 14px;font-size:14px}.cdel span{flex:1;color:var(--ink)}.cdel button{min-height:38px;padding:0 14px}
 button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-weight:700}
 .chips button.newc{border:2px dashed var(--line);background:transparent;color:var(--mut)}
@@ -835,13 +836,21 @@ function parseShotText(text,now){
   const ymd=(y,m,d)=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   const fixY=(m,y)=>y||curYear||(m>cm+1?cy-1:cy);
   const valid=(m,d)=>m>=1&&m<=12&&d>=1&&d<=31;
+  const today=new Date(ymd(cy,cm,cd)+'T00:00');
+  const ago=v=>(today-new Date(v+'T00:00'))/864e5;
   const setCur=(y,mo,d)=>{
-    let v=ymd(y,mo,d);
-    if(cur){const p=new Date(cur+'T00:00'),n=new Date(v+'T00:00'),diff=(p-n)/864e5;
-      // 목록은 보통 최신순: 앞 날짜보다 45일 넘게 과거거나 미래로 튀면 달을 앞 날짜의 달로 맞춰 봄
-      if(diff>45||diff<-45){const pm=p.getMonth()+1,py=p.getFullYear();const alt=ymd(py,pm,d),alt2=ymd(pm===1?py-1:py,pm===1?12:pm-1,d);
-        const ok=x=>{const xd=new Date(x+'T00:00');return xd<=p&&(p-xd)/864e5<=45};v=ok(alt)?alt:ok(alt2)?alt2:v}}
-    if(v>ymd(cy,cm,cd)){const dd=new Date(v+'T00:00');dd.setFullYear(dd.getFullYear()-1);v=ymd(dd.getFullYear(),dd.getMonth()+1,dd.getDate())}
+    // 후보: 읽은 그대로 / 앞자리 1이 빠진 달(1→11, 2→12, 0→10) / 이번 달·지난달 같은 날
+    const c=[[y,mo]];if(mo<=2)c.push([y,mo+10]);c.push([cy,cm],[cm===1?cy-1:cy,cm===1?12:cm-1]);
+    if(cur){const p=new Date(cur+'T00:00');c.push([p.getFullYear(),p.getMonth()+1])}
+    const fix=([yy,mm])=>{let v=ymd(yy,mm,d);if(ago(v)<0){v=ymd(yy-1,mm,d)}return v};
+    const cand=[...new Set(c.map(fix))].filter(v=>{const x=new Date(v+'T00:00');return x.getDate()===d});
+    const first=cand[0];
+    // 읽은 그대로가 최근 75일 안이면 그대로, 아니면 최근이면서 앞 날짜와 가까운 후보
+    let v=first;
+    if(!(ago(first)>=0&&ago(first)<=75)){
+      const ok=cand.filter(x=>ago(x)>=0&&ago(x)<=75);
+      if(ok.length){const ref=cur?new Date(cur+'T00:00'):today;ok.sort((a1,b1)=>Math.abs(new Date(a1+'T00:00')-ref)-Math.abs(new Date(b1+'T00:00')-ref));v=ok[0]}
+    }
     cur=v;curMonth=+v.slice(5,7);
   };
   const out=[];let cur=null,curMonth=null,curYear=null,last=null,pendTime=null;
@@ -906,7 +915,7 @@ function parseShot(text){
 async function prepImage(file){
   try{
     const img=await createImageBitmap(file);
-    let sc=img.width<600?3:img.width<1000?2:1;if(img.width*sc>2600)sc=2600/img.width;
+    let sc=img.width<600?3:img.width<1000?2:img.width<1700?1.5:1;if(img.width*sc>2600)sc=2600/img.width;
     const W=Math.round(img.width*sc),H=Math.round(img.height*sc);
     const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});
     x.imageSmoothingQuality='high';x.drawImage(img,0,0,W,H);
@@ -944,7 +953,7 @@ function renderImp(){
     <input type="checkbox" data-impon${x.on?' checked':''} aria-label="${esc(x.memo)} 추가">
     <input class="nm" data-impnm value="${esc(x.memo)}" aria-label="메모">
     <span class="am${x.t==='in'?' in':''}">${x.t==='in'?'+':'-'}${won(x.a)}</span>
-    <div class="meta"><span class="num">${+x.d.slice(5,7)}/${+x.d.slice(8)}${x.time?' '+x.time:''}</span>
+    <div class="meta"><input type="date" data-impd value="${x.d}" aria-label="날짜" class="idate">${x.time?`<span class="num">${x.time}</span>`:''}
       <button data-impt>${x.t==='in'?'수입':'지출'} ⇄</button>
       <select data-impcat aria-label="카테고리">${S.cats[x.t].map(c=>`<option${c===x.cat?' selected':''}>${esc(c)}</option>`).join('')}</select>${x.dup?'<span>이미 있음</span>':''}</div></div>`).join('');
   const accs=[...planTotals(planFor(month)).keys()];
@@ -971,7 +980,8 @@ $('imp').addEventListener('click',e=>{
   if(t&&t.hasAttribute('data-impt')&&x){x.t=x.t==='in'?'out':'in';x.cat=guessCat(x.memo,x.t);renderImp();return}
 });
 $('imp').addEventListener('change',e=>{const row=e.target.closest('[data-imp]');if(!row)return;const x=IMP[+row.dataset.imp];
-  if(e.target.hasAttribute('data-impon')){x.on=e.target.checked;renderImp()}else if(e.target.hasAttribute('data-impcat'))x.cat=e.target.value});
+  if(e.target.hasAttribute('data-impd')){if(e.target.value){x.d=e.target.value;x.dup=S.tx.some(y=>y.d===x.d&&y.a===x.a&&y.t===x.t)}}
+  else if(e.target.hasAttribute('data-impon')){x.on=e.target.checked;renderImp()}else if(e.target.hasAttribute('data-impcat'))x.cat=e.target.value});
 $('imp').addEventListener('input',e=>{const row=e.target.closest('[data-imp]');if(row&&e.target.hasAttribute('data-impnm'))IMP[+row.dataset.imp].memo=e.target.value});
 function closeSheet(){$('sheet').classList.remove('open');E=null;if(fbPending){const r=fbPending;fbPending=null;if((r.at||0)>(S.updatedAt||0))applyRemote(r)}}
 function commit(tx,msg){
