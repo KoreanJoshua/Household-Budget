@@ -179,6 +179,16 @@ details.dt summary::-webkit-details-marker{display:none}details.dt summary::afte
 .accs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1}.accs button{flex:none;min-height:36px;border-radius:999px;font-size:13px;padding:0 12px}
 .accs button.on{background:var(--acc);border-color:var(--acc);color:var(--accInk);font-weight:700}
 .newcat{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}.newcat input{background:var(--soft2)}.newcat button{padding:0 18px}
+.shot{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;border:1.5px dashed var(--line);background:transparent;color:var(--acc);border-radius:14px;font-size:14px;font-weight:700}
+.ir{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.ir:last-child{border-bottom:0}.ir>input[type=checkbox]{width:22px;height:22px;min-height:0;accent-color:var(--acc);grid-row:span 2}
+.ir .nm{border:0;background:transparent;padding:0;min-height:34px;font-weight:500}
+.ir .am{font:700 15px Inter,"Noto Sans KR",sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.ir .am.in{color:var(--acc)}
+.ir .meta{grid-column:2/-1;display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--mut)}
+.ir .meta select{width:auto;min-height:32px;font-size:16px;padding:0 8px;border-radius:10px}
+.ir .meta button{min-height:32px;padding:0 10px;font-size:12px;border-radius:999px}
+.ir.dup{opacity:.55}
 .cdel{display:flex;align-items:center;gap:8px;background:light-dark(#FFF4EC,#3A2414);border-radius:14px;padding:8px 8px 8px 14px;font-size:14px}.cdel span{flex:1;color:var(--ink)}.cdel button{min-height:38px;padding:0 14px}
 button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-weight:700}
 .chips button.newc{border:2px dashed var(--line);background:transparent;color:var(--mut)}
@@ -307,6 +317,24 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
 
   <!-- 설정 -->
   <div class="view" id="v-set">
+    <section id="syncSec">
+      <h2>PC·폰 동기화</h2>
+      <p class="note" id="syncState" style="margin-top:0"></p>
+      <div id="fbSetup"><p class="note" style="margin:0">아직 동기화 설정 전이에요. 설정이 끝나면 여기에 로그인 버튼이 생겨요.</p></div>
+      <div id="fbBox" hidden>
+        <div id="fbIn">
+          <button id="fbG" class="red" style="width:100%">구글 계정으로 로그인</button>
+          <button id="fbEmT" class="ghost" style="width:100%;border:0;color:var(--mut);margin-top:4px">이메일로 로그인</button>
+          <div id="fbEmBox" hidden>
+            <input id="fbEm" type="email" autocomplete="username" placeholder="이메일" aria-label="이메일" style="margin-bottom:8px">
+            <input id="fbPw" type="password" autocomplete="current-password" placeholder="비밀번호 (6자 이상)" aria-label="비밀번호" style="margin-bottom:8px">
+            <div class="foot" style="margin:0"><button id="fbLogin" class="red">로그인</button><button id="fbSignup">처음이면 가입</button></div>
+          </div>
+        </div>
+        <div id="fbChoice" hidden class="tools"><button id="fbUseRemote" class="red">계정 데이터 쓰기</button><button id="fbUseLocal">이 기기 데이터 쓰기</button></div>
+        <div id="fbOutBox" hidden><button id="fbOut" style="width:100%">로그아웃</button></div>
+      </div>
+    </section>
     <section>
       <h2>월급날</h2>
       <div class="field"><label for="payday">매달 며칠에 받아요?</label><input id="payday" class="pd" inputmode="numeric" aria-label="월급날"></div>
@@ -360,6 +388,8 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
       <span id="eTitle" class="sync"></span>
       <button class="x" id="eCancel" aria-label="닫기"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
+    <button class="shot" id="eShot"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>은행·카드 앱 캡처로 여러 건 불러오기</button>
+    <input type="file" id="shotIn" accept="image/*" hidden>
     <div class="favs" id="eFavs"></div>
     <label class="amtL"><span id="eAmtLab">얼마 썼어요?</span><span class="amtW"><input id="eAmt" class="amtBig" inputmode="numeric" placeholder="0" aria-label="금액"><b>원</b></span></label>
     <div class="quick" id="eQuick"><button data-q="1000">+1천</button><button data-q="5000">+5천</button><button data-q="10000">+1만</button><button data-q="50000">+5만</button><button data-q="0" class="ghost">지움</button></div>
@@ -377,6 +407,19 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
     <p class="note" id="eFixNote" hidden style="margin:0">매달 고른 날짜의 '일'에 자동으로 기록돼요. 날짜가 지나면 이번 달 것도 바로 기록돼요.</p>
     <button class="red save" id="eSave">저장</button>
     <button class="ghost" id="eDel" style="color:var(--warn);border:0">삭제</button>
+  </div>
+</div>
+
+<div class="sheet" id="imp" role="dialog" aria-modal="true" aria-label="캡처에서 불러오기">
+  <div class="in">
+    <div class="grab"></div>
+    <div class="shead"><b style="font-size:17px">캡처에서 찾은 내역</b><button class="x" id="impClose" aria-label="닫기"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <p class="note" id="impMsg" style="margin:0"></p>
+    <div class="track" id="impBar" style="background:var(--soft)"><i style="width:0"></i></div>
+    <div id="impList"></div>
+    <div class="accrow" id="impAccRow" hidden><span>계좌</span><div class="accs" id="impAccs"></div></div>
+    <button class="red save" id="impAdd" hidden>추가</button>
+    <button class="ghost" id="impRetry" hidden style="border:0;color:var(--mut)">다른 캡처 고르기</button>
   </div>
 </div>
 
@@ -499,7 +542,9 @@ try{const v=localStorage.getItem('wolgeup-view');if(v&&$('v-'+v))view=v}catch(e)
 
 let ref=null,saveT=null;
 function save(){
+  if(!applyingRemote)S.updatedAt=Date.now();
   try{localStorage.setItem('wolgeup',JSON.stringify(S))}catch(e){}
+  fbPush();
   if(!ref)return;
   clearTimeout(saveT);saveT=setTimeout(async()=>{
     $('sync').textContent='저장 중…';
@@ -689,6 +734,7 @@ function renderStat(){
 
 /* ---------- 설정 ---------- */
 function renderSet(){
+  renderSync();
   $('payday').value=payday()+'일';
   const accNames=[...new Set([...planTotals(planFor(month)).keys(),...Object.values(S.catAcc)])];
   const accSel=c=>`<select data-catacc="${esc(c)}" aria-label="${esc(c)} 계좌"><option value="">같은 이름 계좌</option>${accNames.filter(n=>n!==c).map(n=>`<option${S.catAcc[c]===n?' selected':''}>${esc(n)}</option>`).join('')}</select>`;
@@ -760,7 +806,94 @@ function delCat(){
   S.cats[k].splice(i,1);if(E.cat===c)E.cat=S.cats[k][0];save();sheetType();
   toast(`'${c}' 카테고리를 지웠어요`,()=>{S.cats[k].splice(i,0,c);save();if(E)sheetType()});
 }
-function closeSheet(){$('sheet').classList.remove('open');E=null}
+/* ---------- 캡처로 불러오기 ---------- */
+const MERCH=[[/칼국수|국밥|식당|김밥|치킨|피자|버거|맥도날드|롯데리아|분식|떡볶이|돈까스|초밥|라멘|샤브|고기|반점|배달의민족|배민|요기요|쿠팡이츠/,['식비']],
+ [/스타벅스|커피|카페|투썸|이디야|메가|빽다방|컴포즈|폴바셋|베이커리|파리바게뜨|뚜레쥬르|디저트/,['카페','식비']],
+ [/쿠팡|네이버페이|11번가|무신사|지마켓|G마켓|옥션|SSG|에이블리|올리브영|다이소/,['쇼핑']],
+ [/택시|카카오T|버스|지하철|코레일|티머니|주유|SRT|고속/,['교통']],
+ [/GS25|CU|세븐일레븐|이마트24|편의점|이마트|홈플러스|롯데마트|마트/,['장보기','생활비','식비']],
+ [/통신|SKT|KT|LG U|유플러스|넷플릭스|유튜브|멜론|구독|보험|관리비/,['고정비']]];
+function guessCat(name,t){
+  if(t==='in'){const c=S.cats.in;return /월급|급여/.test(name)&&c.includes('월급')?'월급':(c.includes('기타 수입')?'기타 수입':c[0])}
+  for(const [re,cands] of MERCH)if(re.test(name)){const c=cands.find(x=>S.cats.out.includes(x));if(c)return c}
+  return (S.lastCat.out&&S.cats.out.includes(S.lastCat.out))?S.lastCat.out:(S.cats.out.includes('기타')?'기타':S.cats.out[0]);
+}
+function parseShot(text){
+  const now=new Date(),cy=now.getFullYear(),cm=now.getMonth()+1;
+  const amtRe=/([+\-−–—~])?\s*(\d{1,3}(?:[,.]\d{3})+|\d{4,})\s*원/;
+  const out=[];let md=null,last=null;
+  for(let t of text.split(/\n/)){
+    t=t.replace(/\s+/g,' ').trim();if(!t)continue;
+    let dm=t.match(/^(\d{1,2})[.\/](\d{1,2})(?![\d,])/)||t.match(/(\d{1,2})월\s?(\d{1,2})일/);
+    if(dm){const mo=+dm[1],da=+dm[2];if(mo>=1&&mo<=12&&da>=1&&da<=31){md=[mo,da];t=t.replace(dm[0],' ').trim()}}
+    if(/^\d{1,2}:\d{2}/.test(t)){if(last&&!last.time)last.time=t.match(/^\d{1,2}:\d{2}/)[0];continue}
+    const am=t.match(amtRe);if(!am||!md)continue;
+    let name=t.replace(am[0],' ').replace(/[|·•]/g,' ').replace(/\s+/g,' ').trim();
+    if(!/[가-힣A-Za-z]/.test(name)||/잔액|합계|총 ?\S*금액|한도/.test(name))continue;
+    const a=parseInt(am[2].replace(/[,.]/g,''),10);if(!a)continue;
+    const y=md[0]>cm+1?cy-1:cy;
+    const tt=am[1]?'out':'in';
+    last={id:uid(),on:true,d:`${y}-${pad(md[0])}-${pad(md[1])}`,memo:name.replace(/_/g,' '),a,t:tt,time:null};
+    last.cat=guessCat(last.memo,tt);
+    last.dup=S.tx.some(x=>x.d===last.d&&x.a===last.a&&x.t===last.t);if(last.dup)last.on=false;
+    out.push(last);
+  }
+  return out;
+}
+let IMP=[],impAcc=null,tessP=null;
+function loadTess(){if(!tessP)tessP=loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');return tessP}
+function impBar(p){$('impBar').firstChild.style.width=Math.round(p*100)+'%'}
+async function runShot(file){
+  closeSheet();IMP=[];$('imp').classList.add('open');$('impList').innerHTML='';$('impAdd').hidden=true;$('impRetry').hidden=true;$('impAccRow').hidden=true;$('impBar').hidden=false;impBar(0);
+  $('impMsg').textContent='글자 인식 도구를 준비하는 중이에요. 처음 한 번은 10초쯤 걸려요.';
+  try{
+    await loadTess();
+    const w=await Tesseract.createWorker('kor+eng',1,{logger:m=>{if(m.status==='recognizing text'){impBar(m.progress);$('impMsg').textContent=`캡처에서 글자를 읽는 중… ${Math.round(m.progress*100)}%`}else if(/load/.test(m.status||''))$('impMsg').textContent='글자 인식 도구를 준비하는 중이에요. 처음 한 번은 10초쯤 걸려요.'}});
+    await w.setParameters({tessedit_pageseg_mode:'4',preserve_interword_spaces:'1'});
+    const {data}=await w.recognize(file);await w.terminate();
+    IMP=parseShot(data.text||'');
+  }catch(e){$('impMsg').textContent='글자를 읽지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.';$('impBar').hidden=true;$('impRetry').hidden=false;return}
+  $('impBar').hidden=true;$('impRetry').hidden=false;
+  if(!IMP.length){$('impMsg').textContent='내역을 찾지 못했어요. 날짜와 금액(예: -13,200원)이 보이게 캡처해 주세요.';return}
+  impAcc=null;renderImp();
+}
+function renderImp(){
+  const n=IMP.filter(x=>x.on).length,dup=IMP.filter(x=>x.dup).length;
+  $('impMsg').textContent=`${IMP.length}건을 찾았어요${dup?` (이미 있는 ${dup}건은 빼 뒀어요)`:''}. 확인하고 고칠 건 고친 뒤 추가하세요.`;
+  $('impList').innerHTML=IMP.map((x,i)=>`<div class="ir${x.dup?' dup':''}" data-imp="${i}">
+    <input type="checkbox" data-impon${x.on?' checked':''} aria-label="${esc(x.memo)} 추가">
+    <input class="nm" data-impnm value="${esc(x.memo)}" aria-label="메모">
+    <span class="am${x.t==='in'?' in':''}">${x.t==='in'?'+':'-'}${won(x.a)}</span>
+    <div class="meta"><span class="num">${+x.d.slice(5,7)}/${+x.d.slice(8)}${x.time?' '+x.time:''}</span>
+      <button data-impt>${x.t==='in'?'수입':'지출'} ⇄</button>
+      <select data-impcat aria-label="카테고리">${S.cats[x.t].map(c=>`<option${c===x.cat?' selected':''}>${esc(c)}</option>`).join('')}</select>${x.dup?'<span>이미 있음</span>':''}</div></div>`).join('');
+  const accs=[...planTotals(planFor(month)).keys()];
+  const anyOut=IMP.some(x=>x.on&&x.t==='out');
+  $('impAccRow').hidden=!anyOut||!accs.length;
+  $('impAccs').innerHTML=`<button data-impacc="" class="${impAcc===null?'on':''}">카테고리대로</button>`+accs.map(a=>`<button data-impacc="${esc(a)}" class="${impAcc===a?'on':''}">${esc(a)}</button>`).join('');
+  $('impAdd').hidden=false;$('impAdd').disabled=!n;$('impAdd').textContent=n?`${n}건 추가`:'추가할 내역을 골라 주세요';
+}
+function impAddAll(){
+  const add=IMP.filter(x=>x.on).map(x=>{const tx={id:uid(),t:x.t,a:x.a,cat:x.cat,memo:x.memo,d:x.d,at:Date.now()};if(x.t==='out'&&impAcc&&impAcc!==accOf(x.cat))tx.acc=impAcc;return tx});
+  if(!add.length)return;
+  S.tx.push(...add);$('imp').classList.remove('open');month=periodOf(add[0].d);save();render();
+  toast(`${add.length}건을 추가했어요`,()=>{const ids=new Set(add.map(x=>x.id));S.tx=S.tx.filter(x=>!ids.has(x.id));save();render()});
+}
+$('eShot').addEventListener('click',()=>$('shotIn').click());
+$('shotIn').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(f)runShot(f)});
+$('imp').addEventListener('click',e=>{
+  if(e.target.id==='imp'){$('imp').classList.remove('open');return}
+  const t=e.target.closest('button');const row=e.target.closest('[data-imp]');const x=row?IMP[+row.dataset.imp]:null;
+  if(t&&t.id==='impClose'){$('imp').classList.remove('open');return}
+  if(t&&t.id==='impAdd'){impAddAll();return}
+  if(t&&t.id==='impRetry'){$('shotIn').click();return}
+  if(t&&t.dataset.impacc!==undefined){impAcc=t.dataset.impacc||null;renderImp();return}
+  if(t&&t.hasAttribute('data-impt')&&x){x.t=x.t==='in'?'out':'in';x.cat=guessCat(x.memo,x.t);renderImp();return}
+});
+$('imp').addEventListener('change',e=>{const row=e.target.closest('[data-imp]');if(!row)return;const x=IMP[+row.dataset.imp];
+  if(e.target.hasAttribute('data-impon')){x.on=e.target.checked;renderImp()}else if(e.target.hasAttribute('data-impcat'))x.cat=e.target.value});
+$('imp').addEventListener('input',e=>{const row=e.target.closest('[data-imp]');if(row&&e.target.hasAttribute('data-impnm'))IMP[+row.dataset.imp].memo=e.target.value});
+function closeSheet(){$('sheet').classList.remove('open');E=null;if(fbPending){const r=fbPending;fbPending=null;if((r.at||0)>(S.updatedAt||0))applyRemote(r)}}
 function commit(tx,msg){
   const i=S.tx.findIndex(t=>t.id===tx.id);const prev=i>=0?S.tx[i]:null;
   if(i>=0)S.tx[i]=tx;else S.tx.push(tx);
@@ -895,8 +1028,88 @@ document.addEventListener('click',e=>{
 });
 $('eAmt').addEventListener('input',e=>{const v=parse(e.target.value);e.target.value=v?won(v):'';saveLabel()});
 
+/* ---------- PC·폰 동기화 (Firebase) ---------- */
+const FB_CONFIG=null; /*FBCONFIG*/
+const FBV='10.14.1';
+let fb=null,fbUser=null,fbUnsub=null,fbPushT=null,applyingRemote=false,fbPending=null,fbChoice=null;
+function syncMsg(t){$('syncState').textContent=t}
+function hdr(t){$('sync').textContent=t}
+function loadScript(src){return new Promise((res,rej)=>{const x=document.createElement('script');x.src=src;x.onload=res;x.onerror=rej;document.head.appendChild(x)})}
+function fbPush(){
+  if(!fb||!fbUser||fbChoice)return;
+  clearTimeout(fbPushT);fbPushT=setTimeout(async()=>{
+    try{hdr('동기화 중…');await fb.db.collection('users').doc(fbUser.uid).set({json:JSON.stringify(S),at:S.updatedAt||Date.now()});hdr('동기화됨');syncMsg(`${fbUser.email||'로그인됨'} · 방금 동기화했어요`)}
+    catch(e){hdr('동기화 실패');syncMsg('동기화하지 못했어요. 인터넷 연결을 확인해 주세요. 이 기기에는 저장돼 있어요.')}
+  },800);
+}
+function applyRemote(d){
+  try{const n=JSON.parse(d.json);if(!n.plans||!n.plans.length)return;applyingRemote=true;S=migrate(n);S.updatedAt=d.at;try{localStorage.setItem('wolgeup',JSON.stringify(S))}catch(e){}render();applyingRemote=false;hdr('동기화됨')}catch(e){applyingRemote=false}
+}
+const localHasData=()=>S.tx.length>0||S.plans.some(p=>p.gross||p.net||p.items.some(i=>i.a));
+const busy=()=>!!E||(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
+function renderSync(){
+  const on=!!FB_CONFIG;$('syncSec').hidden=false;
+  $('fbSetup').hidden=on;$('fbBox').hidden=!on;
+  if(!on)return;
+  $('fbIn').hidden=!!fbUser;$('fbOutBox').hidden=!fbUser;$('fbChoice').hidden=!fbChoice;
+  if(fbUser&&!fbChoice&&!$('syncState').textContent)syncMsg(`${fbUser.email||'로그인됨'} 계정과 동기화 중이에요`);
+  if(!fbUser)syncMsg('로그인하면 PC와 폰에서 같은 데이터를 볼 수 있어요.');
+}
+async function onUser(u){
+  if(fbUnsub){fbUnsub();fbUnsub=null}
+  fbUser=u;fbChoice=null;
+  if(!u){hdr('');renderSync();return}
+  const doc=fb.db.collection('users').doc(u.uid);
+  try{
+    const snap=await doc.get();const d=snap.exists?snap.data():null;
+    if(!d)fbPush();
+    else if(S.syncUid!==u.uid&&localHasData()&&d.json!==JSON.stringify(S)){fbChoice=d;renderSync();syncMsg('이 기기와 계정에 서로 다른 데이터가 있어요. 어느 쪽을 쓸지 골라 주세요.');return}
+    else if((d.at||0)>(S.updatedAt||0)||S.syncUid!==u.uid)applyRemote(d);
+    else if((d.at||0)<(S.updatedAt||0))fbPush();
+    S.syncUid=u.uid;try{localStorage.setItem('wolgeup',JSON.stringify(S))}catch(e){}
+    fbUnsub=doc.onSnapshot(sn=>{if(!sn.exists||sn.metadata.hasPendingWrites)return;const r=sn.data();if((r.at||0)>(S.updatedAt||0)){if(busy())fbPending=r;else applyRemote(r)}});
+    hdr('동기화됨');syncMsg(`${u.email||'로그인됨'} 계정과 동기화 중이에요`);
+  }catch(e){syncMsg('계정 데이터를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.')}
+  renderSync();
+}
+setInterval(()=>{if(fbPending&&!busy()){const r=fbPending;fbPending=null;if((r.at||0)>(S.updatedAt||0))applyRemote(r)}},1500);
+async function fbInit(){
+  if(!FB_CONFIG){renderSync();return}
+  try{
+    const base=`https://www.gstatic.com/firebasejs/${FBV}/`;
+    await loadScript(base+'firebase-app-compat.js');await loadScript(base+'firebase-auth-compat.js');await loadScript(base+'firebase-firestore-compat.js');
+    firebase.initializeApp(FB_CONFIG);fb={auth:firebase.auth(),db:firebase.firestore()};
+    fb.auth.getRedirectResult().catch(e=>syncMsg('로그인하지 못했어요: '+(e.code||'')));
+    fb.auth.onAuthStateChanged(onUser);
+  }catch(e){syncMsg('동기화 기능을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.')}
+  renderSync();
+}
+const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+async function fbGoogle(){
+  if(!fb)return;const pv=new firebase.auth.GoogleAuthProvider();
+  try{if(standalone())await fb.auth.signInWithRedirect(pv);else await fb.auth.signInWithPopup(pv)}
+  catch(e){if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment'){try{await fb.auth.signInWithRedirect(pv)}catch(x){syncMsg('구글 로그인이 안 되면 아래 이메일 로그인을 써 주세요.')}}else if(e.code!=='auth/popup-closed-by-user')syncMsg('구글 로그인이 안 되면 아래 이메일 로그인을 써 주세요. ('+(e.code||'')+')')}
+}
+async function fbEmail(signup){
+  const em=$('fbEm').value.trim(),pw=$('fbPw').value;if(!em||pw.length<6){syncMsg('이메일과 6자 이상 비밀번호를 넣어 주세요.');return}
+  try{if(signup)await fb.auth.createUserWithEmailAndPassword(em,pw);else await fb.auth.signInWithEmailAndPassword(em,pw);$('fbPw').value=''}
+  catch(e){syncMsg({'auth/invalid-credential':'이메일이나 비밀번호가 맞지 않아요.','auth/email-already-in-use':'이미 가입된 이메일이에요. 로그인을 눌러 주세요.','auth/weak-password':'비밀번호를 6자 이상으로 해 주세요.','auth/invalid-email':'이메일 형식을 확인해 주세요.'}[e.code]||('로그인하지 못했어요 ('+(e.code||'')+')'))}
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;
+  if(t.id==='fbG')fbGoogle();
+  else if(t.id==='fbEmT'){$('fbEmBox').hidden=!$('fbEmBox').hidden}
+  else if(t.id==='fbLogin')fbEmail(false);
+  else if(t.id==='fbSignup')fbEmail(true);
+  else if(t.id==='fbOut'){fb&&fb.auth.signOut();toast('로그아웃했어요. 이 기기 데이터는 그대로 있어요')}
+  else if(t.id==='fbUseLocal'||t.id==='fbUseRemote'){const d=fbChoice;fbChoice=null;S.syncUid=fbUser.uid;
+    if(t.id==='fbUseRemote')applyRemote(d);else{S.updatedAt=Date.now();fbPush()}
+    onUser(fbUser);toast(t.id==='fbUseRemote'?'계정 데이터로 바꿨어요':'이 기기 데이터를 계정에 올렸어요')}
+});
+
 if(runFixed())save();
 render();
+fbInit();
 
 (async()=>{
   try{
