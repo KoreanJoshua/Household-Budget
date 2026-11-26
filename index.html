@@ -155,6 +155,7 @@ details.dt summary::-webkit-details-marker{display:none}details.dt summary::afte
 .sheet{position:fixed;inset:0;background:rgba(13,18,32,.4);display:none;z-index:40;align-items:flex-end;justify-content:center}
 .sheet.open{display:flex}
 .sheet .in input,.sheet .in select{font-size:16px}.sheet .in .amtBig{font-size:38px}
+.sheet .in>*{flex-shrink:0}
 .sheet .in{overflow-x:hidden;background:var(--card);width:100%;max-width:640px;border-radius:28px 28px 0 0;padding:10px 20px calc(20px + env(safe-area-inset-bottom));max-height:94vh;overflow:auto;display:flex;flex-direction:column;gap:14px}
 .grab{width:40px;height:5px;border-radius:3px;background:var(--line);align-self:center;flex:none}
 .shead{display:flex;justify-content:space-between;align-items:center}.shead .seg{margin:0}.shead .seg button{padding:0 18px;flex:none}
