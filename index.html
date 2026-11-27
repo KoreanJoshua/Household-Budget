@@ -133,6 +133,8 @@ nav.bt button.on{color:var(--acc);font-weight:700}
 .acc .t b{font:800 17px Inter,"Noto Sans KR",sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
 .acc .t b.neg{color:var(--warn)}
 .acc .s{font-size:12px;color:var(--mut);margin-top:2px}
+.acc{cursor:pointer;-webkit-tap-highlight-color:transparent}.acc.on .t span{color:var(--acc)}.acc .t span::after{content:" ›";color:var(--mut);font-weight:400}
+.accf{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--soft);color:var(--sub);border-radius:14px;padding:0 6px 0 14px;min-height:44px;margin-bottom:8px;font-size:14px}.accf button{min-height:34px;border:0;background:transparent;color:var(--acc);font-weight:700}
 .acc .br{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.acc .br span{font-size:12px;background:var(--soft);color:var(--sub);border-radius:999px;padding:4px 10px}
 button.mini{min-height:32px;font-size:12px;padding:0 10px;font-weight:500;border-radius:999px}
 button.fold{width:100%;display:flex;justify-content:space-between;align-items:center;border:0;padding:0;min-height:52px;background:transparent;font-size:15px;font-weight:700;text-align:left}
@@ -229,17 +231,12 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
       <div id="budPickBook" hidden></div>
       <div id="budList"></div>
       <p class="note" id="outside" hidden></p>
-    </section>
-    <section id="paceSec">
-      <h2>하루·주간 예산 <button class="mini" id="paceEdit">계좌 고르기</button></h2>
-      <div id="pacePick" hidden style="margin-bottom:12px"></div>
-      <div id="paceBody">
-        <div class="sub" style="margin-bottom:6px"><span id="paceLab">남은 돈</span><span><b class="num" id="bLeft">0</b> / <span class="num" id="bBud">0</span></span></div>
-        <div class="track" id="bTrack" style="margin-bottom:12px"><i></i></div>
+      <div id="paceBody" hidden style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+        <div class="sub" style="margin-bottom:8px"><b id="paceTtl" style="color:var(--ink)"></b><span>오늘 · 이번 주 계획</span></div>
         <div class="pace" id="pace"></div>
         <p class="pnote" id="paceNote" style="margin-bottom:0"></p>
       </div>
-      <p class="note" id="paceEmpty" hidden style="margin:0">하루·주간 예산에 넣을 계좌를 "계좌 고르기"에서 골라 주세요.</p>
+      <p class="note" id="paceEmpty" style="margin:10px 0 0">계좌를 누르면 그 계좌의 오늘·이번 주 계획과 내역이 보여요.</p>
     </section>
     <section class="tight">
       <button class="fold" id="fixToggle" aria-expanded="false"><span id="fixSum">고정비 · 고정수입</span><span class="chev">›</span></button>
@@ -248,8 +245,10 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
         <button class="add" id="addFixBook" style="margin-bottom:12px">+ 고정 항목 추가</button>
       </div>
     </section>
+    <p class="pnote" id="leftLine" style="margin-bottom:4px"><span id="paceLab">남은 돈</span> <b class="num" id="bLeft">0</b> / <span class="num" id="bBud">0</span></p>
     <p class="pnote" id="totLine">이번 기간 전체 지출 <b class="num" id="bOut">0</b> · 수입 <b class="num" id="bIn">0</b></p>
     <div class="srch"><input id="txQ" type="search" placeholder="내역 검색 (메모, 카테고리, 금액)" aria-label="내역 검색"></div>
+    <div class="accf" id="accF" hidden><span id="accFLab"></span><button id="accFOff">전체 보기</button></div>
     <div id="txList"></div>
   </div>
 
@@ -368,7 +367,7 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
       <div id="budPick"></div>
     </section>
     <section>
-      <h2>하루·주간 예산에 넣을 계좌</h2>
+      <h2>맨 아래 "남은 돈" 한 줄에 넣을 계좌</h2>
       <div id="pacePickSet"></div>
     </section>
     <section>
@@ -555,7 +554,7 @@ let S=null;try{S=JSON.parse(localStorage.getItem('wolgeup'))}catch(e){}
 if(!S||!S.plans||!S.plans.length)S=sample();
 migrate(S);
 const P=()=>S.plans.find(p=>p.id===S.cur)||S.plans[0];
-let view='book',month=periodOf(today()),budOpen=false,paceOpen=false,fixOpen=false,txQ='',payOpen=null;
+let view='book',month=periodOf(today()),budOpen=false,accF='',fixOpen=false,txQ='',payOpen=null;
 const accOf=c=>(S.catAcc&&S.catAcc[c])||c;
 const accTx=t=>t.acc||accOf(t.cat);
 try{const v=localStorage.getItem('wolgeup-view');if(v&&$('v-'+v))view=v}catch(e){}
@@ -671,24 +670,25 @@ function renderBook(){
   $('bLeft').textContent=won(left);$('bLeft').classList.toggle('neg',left<0);
   $('paceLab').textContent=`${budCats.join(' · ')} ${left<0?'초과':'남은 돈'}`;
   $('bOut').textContent=won(sOut);$('bIn').textContent=won(sIn);$('bBud').textContent=won(budTot);
-  $('bTrack').classList.toggle('over',budUsed>budTot);$('bTrack').firstChild.style.width=(budTot?Math.min(100,budUsed/budTot*100):0)+'%';
-  $('paceEdit').textContent=paceOpen?'닫기':'계좌 고르기';$('pacePick').hidden=!paceOpen;
-  $('pacePick').innerHTML=`<p class="note" style="margin-top:0">체크한 계좌의 금액만으로 하루·주간 예산을 계산해요.</p>`+
-    [...pt.keys()].map(n=>`<label class="chk"><input type="checkbox" data-pace="${esc(n)}"${S.pace.includes(n)?' checked':''}> ${esc(n)} <span class="note num" style="margin:0 0 0 auto">${won(pt.get(n))}</span></label>`).join('');
-  $('paceBody').hidden=!budTot;$('paceEmpty').hidden=!!budTot;
-  renderPace(out,budCats,budTot,budUsed);
+  $('leftLine').hidden=!budTot;
+  if(accF&&!S.bud.includes(accF))accF='';
+  const fb=accF?(pt.get(accF)||0):0;
+  $('paceBody').hidden=!(accF&&fb);$('paceEmpty').hidden=!!accF;
+  $('paceTtl').textContent=accF;
+  if(accF&&fb)renderPace(out,[accF],fb,byAcc.get(accF)||0);
   // 계좌 고르기 패널 (플랜 선택 포함)
   $('budEdit').textContent=budOpen?'닫기':'계좌 고르기';
   $('budPickBook').hidden=!budOpen;
   $('budPickBook').innerHTML=`<div class="field"><label for="planSel">금액을 가져올 플랜</label><select id="planSel">${S.plans.map(p=>`<option value="${p.id}"${p.id===plan.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select></div>
-    <p class="note" style="margin-top:0">체크한 계좌가 계좌별 현황에 보여요. 하루·주간 예산 계좌는 아래에서 따로 골라요.</p>`+
-    [...pt.keys()].map(n=>`<label class="chk"><input type="checkbox" data-bud="${esc(n)}"${S.bud.includes(n)?' checked':''}> ${esc(n)} <span class="note num" style="margin:0 0 0 auto">${won(pt.get(n))}</span></label>`).join('');
+    <p class="note" style="margin-top:0"><b>계좌별 현황에 볼 계좌</b></p>`+
+    [...pt.keys()].map(n=>`<label class="chk"><input type="checkbox" data-bud="${esc(n)}"${S.bud.includes(n)?' checked':''}> ${esc(n)} <span class="note num" style="margin:0 0 0 auto">${won(pt.get(n))}</span></label>`).join('')+
+    '<div style="height:12px"></div>';
   const accs=S.bud.filter(c=>pt.has(c)||byAcc.has(c));
   $('budList').innerHTML=accs.length?accs.map(c=>{
     const b=pt.get(c)||0,u=byAcc.get(c)||0,l=b-u,m=br.get(c);
     const parts=m?[...m.entries()].sort((x,y)=>y[1]-x[1]):[];
     const brk=parts.length&&!(parts.length===1&&parts[0][0]===c)?`<div class="br">${parts.map(([k,v])=>`<span>${esc(k)} <b class="num">${won(v)}</b></span>`).join('')}</div>`:'';
-    return `<div class="acc"><div class="t"><span>${esc(c)}</span><b class="${l<0?'neg':''}">${won(l)}</b></div>
+    return `<div class="acc${accF===c?' on':''}" data-accf="${esc(c)}" role="button" tabindex="0" aria-label="${esc(c)} 내역 보기"><div class="t"><span>${esc(c)}</span><b class="${l<0?'neg':''}">${won(l)}</b></div>
       <div class="s">넣은 돈 <span class="num">${won(b)}</span> · 쓴 돈 <span class="num">${won(u)}</span>${b?` · ${Math.round(u/b*100)}%`:''}</div>
       ${b?`<div class="meter${u>b?' over':''}"><i style="width:${Math.min(100,u/b*100)}%"></i></div>`:''}${brk}</div>`}).join(''):'<p class="note">볼 계좌가 없어요. 오른쪽 위 "계좌 고르기"에서 골라 주세요.</p>';
   const outside=[...byAcc.entries()].filter(([a])=>!S.bud.includes(a));
@@ -704,13 +704,14 @@ function renderBook(){
 }
 function renderTxList(){
   const q=txQ.trim().toLowerCase();
-  const tx=monthTx(month).filter(t=>!q||(t.memo||'').toLowerCase().includes(q)||t.cat.toLowerCase().includes(q)||String(t.a).includes(q.replace(/,/g,'')));
+  $('accF').hidden=!accF;if(accF)$('accFLab').innerHTML=`<b>${esc(accF)}</b> 계좌 내역만 보는 중`;
+  const tx=monthTx(month).filter(t=>!accF||(t.t==='out'&&accTx(t)===accF)).filter(t=>!q||(t.memo||'').toLowerCase().includes(q)||t.cat.toLowerCase().includes(q)||String(t.a).includes(q.replace(/,/g,'')));
   const days=new Map();for(const t of [...tx].sort((a,b)=>b.d.localeCompare(a.d)||(b.at||0)-(a.at||0))){if(!days.has(t.d))days.set(t.d,[]);days.get(t.d).push(t)}
   $('txList').innerHTML=days.size?[...days.entries()].map(([d,l])=>{
     const dt=dOf(d);const o=l.filter(t=>t.t==='out').reduce((s,t)=>s+t.a,0);
     return `<div class="day"><h3><span>${+d.slice(5,7)}/${+d.slice(8)} ${WD[dt.getDay()]}</span><span class="num">${o?'-'+won(o):''}</span></h3>`+
       l.map(t=>`<button class="tx" data-tx="${t.id}">${icTile(t.cat)}<span class="m">${esc(t.memo||t.cat)}</span><span class="a num${t.t==='in'?' in':''}">${t.t==='in'?'+':'-'}${won(t.a)}</span><span class="c">${esc(t.cat)}${accTx(t)!==t.cat&&t.t==='out'?' · '+esc(accTx(t)):''}${t.fx?' · 고정':''}</span></button>`).join('')+'</div>'}).join('')
-    :(q?'<div class="empty">찾는 내역이 없어요.</div>':'<div class="empty">아직 기록이 없어요.<br>오른쪽 아래 + 를 눌러 첫 내역을 적어 보세요.</div>');
+    :(q||accF?'<div class="empty">찾는 내역이 없어요.</div>':'<div class="empty">아직 기록이 없어요.<br>오른쪽 아래 + 를 눌러 첫 내역을 적어 보세요.</div>');
 }
 
 function renderPace(out,budCats,budTot,budUsed){
@@ -1099,6 +1100,9 @@ document.addEventListener('change',e=>{
   if(t.id==='alOn'){p.alOn=t.checked;renderPlan();save()}
 });
 $('sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet()});
+const pickAcc=el=>{const c=el.dataset.accf;accF=accF===c?'':c;renderBook();if(accF)setTimeout(()=>$('paceBody').scrollIntoView({behavior:'smooth',block:'nearest'}),30)};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-accf]');if(el)pickAcc(el)});
+document.addEventListener('keydown',e=>{const el=e.target.closest&&e.target.closest('[data-accf]');if(el&&(e.key==='Enter'||e.key===' ')){e.preventDefault();pickAcc(el)}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&E)closeSheet();if(e.key==='Enter'&&E&&e.target.tagName==='INPUT'){e.preventDefault();if(e.target.id==='eNewCatIn')addCat();else saveSheet()}});
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
@@ -1107,7 +1111,7 @@ document.addEventListener('click',e=>{
   if(t.id==='mNext'||t.id==='sNext'){month=addM(month,1);render();return}
   if(t.id==='fab'){openSheet();return}
   if(t.id==='budEdit'){budOpen=!budOpen;renderBook();return}
-  if(t.id==='paceEdit'){paceOpen=!paceOpen;renderBook();return}
+  if(t.id==='accFOff'){accF='';renderBook();return}
   if(t.id==='fixToggle'){fixOpen=!fixOpen;renderBook();return}
   if(t.dataset.tx){openSheet(S.tx.find(x=>x.id===t.dataset.tx));return}
   if(t.id==='addFixBook'){openSheet(null,'fixed');return}
