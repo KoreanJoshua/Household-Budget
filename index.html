@@ -224,21 +224,22 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
   <!-- 가계부 -->
   <div class="view" id="v-book">
     <div class="mnav"><button id="mPrev" aria-label="이전 기간">‹</button><b id="mLab"></b><button id="mNext" aria-label="다음 기간">›</button></div>
-    <div class="hero">
-      <div class="lab" id="bLeftLab">생활 예산에서 남은 돈</div>
-      <div class="big num" id="bLeft">0</div>
-      <div class="track" id="bTrack"><i></i></div>
-      <div class="sub"><span>쓴 돈 <b class="num" id="bUsed">0</b></span><span>예산 <b class="num" id="bBud">0</b></span></div>
-    </div>
-    <div id="paceSec">
-      <div class="pace" id="pace"></div>
-      <p class="pnote" id="paceNote"></p>
-    </div>
     <section>
       <h2>계좌별 현황 <button class="mini" id="budEdit">계좌 고르기</button></h2>
       <div id="budPickBook" hidden></div>
       <div id="budList"></div>
       <p class="note" id="outside" hidden></p>
+    </section>
+    <section id="paceSec">
+      <h2>하루·주간 예산 <button class="mini" id="paceEdit">계좌 고르기</button></h2>
+      <div id="pacePick" hidden style="margin-bottom:12px"></div>
+      <div id="paceBody">
+        <div class="sub" style="margin-bottom:6px"><span id="paceLab">남은 돈</span><span><b class="num" id="bLeft">0</b> / <span class="num" id="bBud">0</span></span></div>
+        <div class="track" id="bTrack" style="margin-bottom:12px"><i></i></div>
+        <div class="pace" id="pace"></div>
+        <p class="pnote" id="paceNote" style="margin-bottom:0"></p>
+      </div>
+      <p class="note" id="paceEmpty" hidden style="margin:0">하루·주간 예산에 넣을 계좌를 "계좌 고르기"에서 골라 주세요.</p>
     </section>
     <section class="tight">
       <button class="fold" id="fixToggle" aria-expanded="false"><span id="fixSum">고정비 · 고정수입</span><span class="chev">›</span></button>
@@ -363,8 +364,12 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
       <div id="catIn"></div><button class="add" data-addcat="in">+ 수입 카테고리</button>
     </section>
     <section>
-      <h2>예산으로 볼 계좌 <small>가계부 화면에서도 고를 수 있어요</small></h2>
+      <h2>계좌별 현황에 볼 계좌 <small>가계부 화면에서도 고를 수 있어요</small></h2>
       <div id="budPick"></div>
+    </section>
+    <section>
+      <h2>하루·주간 예산에 넣을 계좌</h2>
+      <div id="pacePickSet"></div>
     </section>
     <section>
       <h2>고정비 · 고정수입 <small>매달 그날 자동 기록</small></h2>
@@ -536,6 +541,7 @@ function migrate(s){
   if(!s.tx)s.tx=[];
   if(!s.cats)s.cats={out:['생활비','식비','교통','고정비','기타'],in:['월급','용돈','기타 수입']};
   if(!s.bud)s.bud=['생활비'];
+  if(!s.pace)s.pace=s.bud.includes('생활비')?['생활비']:[...s.bud];
   if(!s.fixed)s.fixed=[];
   if(!s.fav)s.fav=[];
   if(!s.mp)s.mp={};
@@ -549,7 +555,7 @@ let S=null;try{S=JSON.parse(localStorage.getItem('wolgeup'))}catch(e){}
 if(!S||!S.plans||!S.plans.length)S=sample();
 migrate(S);
 const P=()=>S.plans.find(p=>p.id===S.cur)||S.plans[0];
-let view='book',month=periodOf(today()),budOpen=false,fixOpen=false,txQ='',payOpen=null;
+let view='book',month=periodOf(today()),budOpen=false,paceOpen=false,fixOpen=false,txQ='',payOpen=null;
 const accOf=c=>(S.catAcc&&S.catAcc[c])||c;
 const accTx=t=>t.acc||accOf(t.cat);
 try{const v=localStorage.getItem('wolgeup-view');if(v&&$('v-'+v))view=v}catch(e){}
@@ -659,19 +665,23 @@ function renderBook(){
   const sOut=out.reduce((s,t)=>s+t.a,0),sIn=inc.reduce((s,t)=>s+t.a,0);
   const byAcc=new Map(),br=new Map();
   for(const t of out){const a=accTx(t);byAcc.set(a,(byAcc.get(a)||0)+t.a);if(!br.has(a))br.set(a,new Map());const m=br.get(a);m.set(t.cat,(m.get(t.cat)||0)+t.a)}
-  const budCats=S.bud.filter(c=>pt.has(c));
+  const budCats=S.pace.filter(c=>pt.has(c));
   const budTot=budCats.reduce((s,c)=>s+pt.get(c),0),budUsed=budCats.reduce((s,c)=>s+(byAcc.get(c)||0),0);
   const left=budTot-budUsed;
   $('bLeft').textContent=won(left);$('bLeft').classList.toggle('neg',left<0);
-  $('bLeftLab').textContent=budTot?(left<0?'생활 예산을 이만큼 넘었어요':'생활 예산에서 남은 돈'):'생활 예산 계좌를 골라 주세요';
-  $('bOut').textContent=won(sOut);$('bIn').textContent=won(sIn);$('bBud').textContent=won(budTot);$('bUsed').textContent=won(budUsed);
+  $('paceLab').textContent=`${budCats.join(' · ')} ${left<0?'초과':'남은 돈'}`;
+  $('bOut').textContent=won(sOut);$('bIn').textContent=won(sIn);$('bBud').textContent=won(budTot);
   $('bTrack').classList.toggle('over',budUsed>budTot);$('bTrack').firstChild.style.width=(budTot?Math.min(100,budUsed/budTot*100):0)+'%';
+  $('paceEdit').textContent=paceOpen?'닫기':'계좌 고르기';$('pacePick').hidden=!paceOpen;
+  $('pacePick').innerHTML=`<p class="note" style="margin-top:0">체크한 계좌의 금액만으로 하루·주간 예산을 계산해요.</p>`+
+    [...pt.keys()].map(n=>`<label class="chk"><input type="checkbox" data-pace="${esc(n)}"${S.pace.includes(n)?' checked':''}> ${esc(n)} <span class="note num" style="margin:0 0 0 auto">${won(pt.get(n))}</span></label>`).join('');
+  $('paceBody').hidden=!budTot;$('paceEmpty').hidden=!!budTot;
   renderPace(out,budCats,budTot,budUsed);
   // 계좌 고르기 패널 (플랜 선택 포함)
   $('budEdit').textContent=budOpen?'닫기':'계좌 고르기';
   $('budPickBook').hidden=!budOpen;
   $('budPickBook').innerHTML=`<div class="field"><label for="planSel">금액을 가져올 플랜</label><select id="planSel">${S.plans.map(p=>`<option value="${p.id}"${p.id===plan.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select></div>
-    <p class="note" style="margin-top:0">체크한 계좌만 맨 위 남은 돈과 하루·주간 예산에 들어가요.</p>`+
+    <p class="note" style="margin-top:0">체크한 계좌가 계좌별 현황에 보여요. 하루·주간 예산 계좌는 아래에서 따로 골라요.</p>`+
     [...pt.keys()].map(n=>`<label class="chk"><input type="checkbox" data-bud="${esc(n)}"${S.bud.includes(n)?' checked':''}> ${esc(n)} <span class="note num" style="margin:0 0 0 auto">${won(pt.get(n))}</span></label>`).join('');
   const accs=S.bud.filter(c=>pt.has(c)||byAcc.has(c));
   $('budList').innerHTML=accs.length?accs.map(c=>{
@@ -680,10 +690,10 @@ function renderBook(){
     const brk=parts.length&&!(parts.length===1&&parts[0][0]===c)?`<div class="br">${parts.map(([k,v])=>`<span>${esc(k)} <b class="num">${won(v)}</b></span>`).join('')}</div>`:'';
     return `<div class="acc"><div class="t"><span>${esc(c)}</span><b class="${l<0?'neg':''}">${won(l)}</b></div>
       <div class="s">넣은 돈 <span class="num">${won(b)}</span> · 쓴 돈 <span class="num">${won(u)}</span>${b?` · ${Math.round(u/b*100)}%`:''}</div>
-      ${b?`<div class="meter${u>b?' over':''}"><i style="width:${Math.min(100,u/b*100)}%"></i></div>`:''}${brk}</div>`}).join(''):'<p class="note">생활 예산 계좌가 없어요. 오른쪽 위 "계좌 고르기"에서 골라 주세요.</p>';
+      ${b?`<div class="meter${u>b?' over':''}"><i style="width:${Math.min(100,u/b*100)}%"></i></div>`:''}${brk}</div>`}).join(''):'<p class="note">볼 계좌가 없어요. 오른쪽 위 "계좌 고르기"에서 골라 주세요.</p>';
   const outside=[...byAcc.entries()].filter(([a])=>!S.bud.includes(a));
   $('outside').hidden=!outside.length;
-  $('outside').textContent=outside.length?`생활 예산 밖 지출: ${outside.map(([a,v])=>`${a} ${won(v)}원`).join(', ')}. 설정 → 지출 카테고리에서 계좌를 연결할 수 있어요.`:'';
+  $('outside').textContent=outside.length?`위 계좌 밖 지출: ${outside.map(([a,v])=>`${a} ${won(v)}원`).join(', ')}. 설정 → 지출 카테고리에서 계좌를 연결할 수 있어요.`:'';
   // 고정 항목 요약
   const fo=S.fixed.filter(f=>f.t==='out').reduce((s,f)=>s+(f.a||0),0),fi=S.fixed.filter(f=>f.t==='in').reduce((s,f)=>s+(f.a||0),0);
   $('fixSum').innerHTML=`고정비 · 고정수입<small>${S.fixed.length?`${S.fixed.length}건 · 매달 ${fo?'-'+won(fo):''}${fo&&fi?' / ':''}${fi?'+'+won(fi):''}`:'없음'}</small>`;
@@ -705,8 +715,7 @@ function renderTxList(){
 
 function renderPace(out,budCats,budTot,budUsed){
   const dim=pSpan(month),td=today(),isCur=month===periodOf(td),ps=pStart(month),pe=pEnd(month);
-  if(!budTot){$('paceSec').hidden=true;return}
-  $('paceSec').hidden=false;
+  if(!budTot)return;
   const daily=budTot/dim,bo=out.filter(t=>budCats.includes(accTx(t)));
   const sumR=(a,b)=>bo.filter(t=>t.d>=a&&t.d<=b).reduce((s,t)=>s+t.a,0);
   const card=(k,bud,used)=>{const p=bud?Math.round(used/bud*100):0,o=used>bud;
@@ -757,6 +766,7 @@ function renderSet(){
   $('accList').innerHTML=rowsHTML(P().acc,'acc');
   const names=[...planTotals(planFor(month)).keys()];
   $('budPick').innerHTML=names.map(n=>`<label class="chk"><input type="checkbox" data-bud="${esc(n)}"${S.bud.includes(n)?' checked':''}> ${esc(n)}</label>`).join('');
+  $('pacePickSet').innerHTML=names.map(n=>`<label class="chk"><input type="checkbox" data-pace="${esc(n)}"${S.pace.includes(n)?' checked':''}> ${esc(n)}</label>`).join('');
   const opt=(t,sel)=>S.cats[t].map(c=>`<option${c===sel?' selected':''}>${esc(c)}</option>`).join('');
   $('fixList').innerHTML=S.fixed.length?S.fixed.map(f=>`<div data-fix="${f.id}" style="border-bottom:1px solid var(--line);padding:8px 0 4px">
     <div class="row fx"><input value="${esc(f.name)}" data-ff="name" placeholder="이름 (예: 통신비)" aria-label="고정 항목 이름">
@@ -1062,7 +1072,7 @@ document.addEventListener('input',e=>{
   if(view==='set'){
     if(t.hasAttribute('data-catname')){const r=t.closest('.row'),k=r.dataset.cat,i=+r.dataset.i,old=S.cats[k][i],nv=t.value;
       if(k==='out'&&S.catAcc[old]!==undefined){S.catAcc[nv]=S.catAcc[old];delete S.catAcc[old]}S.cats[k][i]=nv;for(const x of S.tx)if(x.t===k&&x.cat===old)x.cat=nv;for(const f of S.fixed)if(f.t===k&&f.cat===old)f.cat=nv;
-      const bi=S.bud.indexOf(old);if(bi>=0)S.bud[bi]=nv;save();return}
+      const bi=S.bud.indexOf(old);if(bi>=0)S.bud[bi]=nv;const pi=S.pace.indexOf(old);if(pi>=0)S.pace[pi]=nv;save();return}
     const fx=t.closest('[data-fix]');
     if(fx&&t.dataset.ff){const f=S.fixed.find(x=>x.id===fx.dataset.fix);const k=t.dataset.ff;
       if(k==='a')f.a=parse(t.value);else if(k==='day')f.day=Math.min(31,Math.max(1,parse(t.value)||1));else if(k==='name')f.name=t.value;save()}
@@ -1079,6 +1089,7 @@ document.addEventListener('change',e=>{
   if(t.classList.contains('pd')){if(!parse(t.value))return;const v=Math.min(31,Math.max(1,parse(t.value)));S.payday=v;month=periodOf(today());t.value=v+'일';save();toast(`한 달 기준일을 매달 ${v}일로 정했어요`);return}
   if(t.id==='planSel'){S.mp[month]=t.value;save();renderBook();return}
   if(t.dataset.catacc!==undefined){const c=t.dataset.catacc;if(t.value)S.catAcc[c]=t.value;else delete S.catAcc[c];save();toast(t.value?`'${c}'는 ${t.value} 계좌 돈으로 계산해요`:`'${c}'는 자기 이름 계좌로 계산해요`);return}
+  if(t.dataset.pace!==undefined){const n=t.dataset.pace;S.pace=S.pace.filter(x=>x!==n);if(t.checked)S.pace.push(n);save();if(view==='book')renderBook();return}
   if(t.dataset.bud!==undefined){const n=t.dataset.bud;S.bud=S.bud.filter(x=>x!==n);if(t.checked)S.bud.push(n);save();if(view==='book')renderBook();return}
   const fx=t.closest('[data-fix]');
   if(fx&&t.tagName==='SELECT'){const f=S.fixed.find(x=>x.id===fx.dataset.fix);if(t.dataset.ff==='t'){f.t=t.value;f.cat=S.cats[f.t][0]||'기타';renderSet()}else f.cat=t.value;save();return}
@@ -1096,6 +1107,7 @@ document.addEventListener('click',e=>{
   if(t.id==='mNext'||t.id==='sNext'){month=addM(month,1);render();return}
   if(t.id==='fab'){openSheet();return}
   if(t.id==='budEdit'){budOpen=!budOpen;renderBook();return}
+  if(t.id==='paceEdit'){paceOpen=!paceOpen;renderBook();return}
   if(t.id==='fixToggle'){fixOpen=!fixOpen;renderBook();return}
   if(t.dataset.tx){openSheet(S.tx.find(x=>x.id===t.dataset.tx));return}
   if(t.id==='addFixBook'){openSheet(null,'fixed');return}
