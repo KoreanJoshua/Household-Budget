@@ -326,6 +326,7 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
       <div id="fbSetup"><p class="note" style="margin:0">아직 동기화 설정 전이에요. 설정이 끝나면 여기에 로그인 버튼이 생겨요.</p></div>
       <div id="fbBox" hidden>
         <div id="fbIn">
+          <p class="note" id="fbPwaNote" hidden style="margin:0 0 8px">홈 화면 앱에서는 아이폰이 구글 로그인을 막아요. PC에서 구글로 로그인한 뒤 <b>폰용 비밀번호 만들기</b>를 하고, 여기서 그 이메일과 비밀번호로 로그인해 주세요.</p>
           <button id="fbG" class="red" style="width:100%">구글 계정으로 로그인</button>
           <button id="fbEmT" class="ghost" style="width:100%;border:0;color:var(--mut);margin-top:4px">이메일로 로그인</button>
           <div id="fbEmBox" hidden>
@@ -335,7 +336,17 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
           </div>
         </div>
         <div id="fbChoice" hidden class="tools"><button id="fbUseRemote" class="red">계정 데이터 쓰기</button><button id="fbUseLocal">이 기기 데이터 쓰기</button></div>
-        <div id="fbOutBox" hidden><button id="fbOut" style="width:100%">로그아웃</button></div>
+        <div id="fbOutBox" hidden>
+          <div id="fbLinkBox" hidden style="margin-bottom:8px">
+            <button id="fbLinkT" style="width:100%">폰용 비밀번호 만들기</button>
+            <div id="fbLinkIn" hidden style="margin-top:8px">
+              <p class="note" style="margin:0 0 8px">홈 화면 앱에서는 구글 로그인이 안 돼서, 이 구글 이메일로 비밀번호 로그인도 되게 해 둬요. 같은 계정이라 데이터가 그대로 이어져요.</p>
+              <input id="fbLinkPw" type="password" autocomplete="new-password" placeholder="새 비밀번호 (6자 이상)" aria-label="새 비밀번호" style="margin-bottom:8px">
+              <button id="fbLinkGo" class="red" style="width:100%">비밀번호 만들기</button>
+            </div>
+          </div>
+          <button id="fbOut" style="width:100%">로그아웃</button>
+        </div>
       </div>
     </section>
     <section>
@@ -1134,6 +1145,7 @@ document.addEventListener('click',e=>{
 $('eAmt').addEventListener('input',e=>{const v=parse(e.target.value);e.target.value=v?won(v):'';saveLabel()});
 
 /* ---------- PC·폰 동기화 (Firebase) ---------- */
+const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||!!navigator.standalone;
 const FB_CONFIG={apiKey:"AIzaSyAY0J5vngCXWiLd2Nw_CH5RLWsKVyRpZMY",authDomain:"where-did-you-spend-your-money.firebaseapp.com",projectId:"where-did-you-spend-your-money",storageBucket:"where-did-you-spend-your-money.firebasestorage.app",messagingSenderId:"308757321073",appId:"1:308757321073:web:697b69b74f81397c7c92d0"};
 const FBV='10.14.1';
 let fb=null,fbUser=null,fbUnsub=null,fbPushT=null,applyingRemote=false,fbPending=null,fbChoice=null;
@@ -1157,6 +1169,9 @@ function renderSync(){
   $('fbSetup').hidden=on;$('fbBox').hidden=!on;
   if(!on)return;
   $('fbIn').hidden=!!fbUser;$('fbOutBox').hidden=!fbUser;$('fbChoice').hidden=!fbChoice;
+  const pwa=standalone();$('fbPwaNote').hidden=!pwa;$('fbG').hidden=pwa;$('fbEmT').hidden=pwa;if(pwa)$('fbEmBox').hidden=false;
+  const ids=fbUser?fbUser.providerData.map(x=>x.providerId):[];
+  $('fbLinkBox').hidden=!(fbUser&&ids.includes('google.com')&&!ids.includes('password'));
   if(fbUser&&!fbChoice&&!$('syncState').textContent)syncMsg(`${fbUser.email||'로그인됨'} 계정과 동기화 중이에요`);
   if(!fbUser)syncMsg('로그인하면 PC와 폰에서 같은 데이터를 볼 수 있어요.');
 }
@@ -1189,7 +1204,6 @@ async function fbInit(){
   }catch(e){syncMsg('동기화 기능을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.')}
   renderSync();
 }
-const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone;
 async function fbGoogle(){
   if(!fb)return;const pv=new firebase.auth.GoogleAuthProvider();
   try{if(standalone())await fb.auth.signInWithRedirect(pv);else await fb.auth.signInWithPopup(pv)}
@@ -1198,7 +1212,13 @@ async function fbGoogle(){
 async function fbEmail(signup){
   const em=$('fbEm').value.trim(),pw=$('fbPw').value;if(!em||pw.length<6){syncMsg('이메일과 6자 이상 비밀번호를 넣어 주세요.');return}
   try{if(signup)await fb.auth.createUserWithEmailAndPassword(em,pw);else await fb.auth.signInWithEmailAndPassword(em,pw);$('fbPw').value=''}
-  catch(e){syncMsg({'auth/invalid-credential':'이메일이나 비밀번호가 맞지 않아요.','auth/email-already-in-use':'이미 가입된 이메일이에요. 로그인을 눌러 주세요.','auth/weak-password':'비밀번호를 6자 이상으로 해 주세요.','auth/invalid-email':'이메일 형식을 확인해 주세요.'}[e.code]||('로그인하지 못했어요 ('+(e.code||'')+')'))}
+  catch(e){syncMsg({'auth/invalid-credential':'이메일이나 비밀번호가 맞지 않아요.','auth/email-already-in-use':'이미 가입된 이메일이에요. 구글로 가입했다면 PC에서 폰용 비밀번호 만들기를 먼저 해 주세요.','auth/weak-password':'비밀번호를 6자 이상으로 해 주세요.','auth/invalid-email':'이메일 형식을 확인해 주세요.'}[e.code]||('로그인하지 못했어요 ('+(e.code||'')+')'))}
+}
+async function fbLink(){
+  const pw=$('fbLinkPw').value;if(pw.length<6){syncMsg('비밀번호를 6자 이상으로 해 주세요.');return}
+  try{await fbUser.linkWithCredential(firebase.auth.EmailAuthProvider.credential(fbUser.email,pw));await fbUser.reload();fbUser=fb.auth.currentUser;$('fbLinkPw').value='';
+    syncMsg(`이제 폰 앱에서 ${fbUser.email} 와 방금 만든 비밀번호로 로그인하면 돼요.`);renderSync();toast('폰용 비밀번호를 만들었어요')}
+  catch(e){syncMsg({'auth/requires-recent-login':'보안을 위해 로그아웃 후 구글로 다시 로그인하고 해 주세요.','auth/email-already-in-use':'이 이메일로 따로 가입된 계정이 이미 있어요. 그 계정으로 로그인해 주세요.','auth/credential-already-in-use':'이 이메일로 따로 가입된 계정이 이미 있어요. 그 계정으로 로그인해 주세요.','auth/provider-already-linked':'이미 비밀번호가 있어요.','auth/weak-password':'비밀번호를 6자 이상으로 해 주세요.'}[e.code]||('비밀번호를 만들지 못했어요 ('+(e.code||'')+')'))}
 }
 document.addEventListener('click',e=>{
   const t=e.target.closest('button');if(!t)return;
@@ -1206,6 +1226,8 @@ document.addEventListener('click',e=>{
   else if(t.id==='fbEmT'){$('fbEmBox').hidden=!$('fbEmBox').hidden}
   else if(t.id==='fbLogin')fbEmail(false);
   else if(t.id==='fbSignup')fbEmail(true);
+  else if(t.id==='fbLinkT'){$('fbLinkIn').hidden=!$('fbLinkIn').hidden}
+  else if(t.id==='fbLinkGo')fbLink();
   else if(t.id==='fbOut'){fb&&fb.auth.signOut();toast('로그아웃했어요. 이 기기 데이터는 그대로 있어요')}
   else if(t.id==='fbUseLocal'||t.id==='fbUseRemote'){const d=fbChoice;fbChoice=null;S.syncUid=fbUser.uid;
     if(t.id==='fbUseRemote')applyRemote(d);else{S.updatedAt=Date.now();fbPush()}
