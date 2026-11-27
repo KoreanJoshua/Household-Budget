@@ -1134,7 +1134,7 @@ document.addEventListener('click',e=>{
 $('eAmt').addEventListener('input',e=>{const v=parse(e.target.value);e.target.value=v?won(v):'';saveLabel()});
 
 /* ---------- PC·폰 동기화 (Firebase) ---------- */
-const FB_CONFIG=null; /*FBCONFIG*/
+const FB_CONFIG={apiKey:"AIzaSyAY0J5vngCXWiLd2Nw_CH5RLWsKVyRpZMY",authDomain:"where-did-you-spend-your-money.firebaseapp.com",projectId:"where-did-you-spend-your-money",storageBucket:"where-did-you-spend-your-money.firebasestorage.app",messagingSenderId:"308757321073",appId:"1:308757321073:web:697b69b74f81397c7c92d0"};
 const FBV='10.14.1';
 let fb=null,fbUser=null,fbUnsub=null,fbPushT=null,applyingRemote=false,fbPending=null,fbChoice=null;
 function syncMsg(t){$('syncState').textContent=t}
