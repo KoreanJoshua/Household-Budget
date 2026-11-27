@@ -282,7 +282,7 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
       <div id="grossBox">
         <div class="field"><label for="gross">기본급 (과세)</label><input id="gross" class="amt" inputmode="numeric" data-k="gross"></div>
         <div class="field"><label for="nontax">식대 등 비과세</label><input id="nontax" class="amt" inputmode="numeric" data-k="nontax"></div>
-        <div class="field"><label for="payday2">월급날 (매달)</label><input id="payday2" class="pd" inputmode="numeric" aria-label="월급날"></div>
+        <div class="field"><label for="payday2">한 달 기준일 (매달)</label><input id="payday2" class="pd" inputmode="numeric" aria-label="한 달 기준일"></div>
         <div class="left" id="netLine"><span>실수령액</span><b class="num">0</b></div>
         <details class="dt" id="dedBox"><summary id="dedSum">공제 내역 보기</summary>
           <table id="ded"></table>
@@ -350,9 +350,9 @@ button.warnb{background:var(--warn);border-color:var(--warn);color:#fff;font-wei
       </div>
     </section>
     <section>
-      <h2>월급날</h2>
-      <div class="field"><label for="payday">매달 며칠에 받아요?</label><input id="payday" class="pd" inputmode="numeric" aria-label="월급날"></div>
-      <p class="note" style="margin-bottom:0">가계부와 통계의 한 달을 월급날부터 다음 월급날 전날까지로 계산해요. 예: 25일이면 11/25~12/24가 "11월 월급" 기간이에요. 31처럼 그달에 없는 날이면 그달 마지막 날로 잡아요.</p>
+      <h2>한 달 기준일</h2>
+      <div class="field"><label for="payday">매달 며칠부터 한 달로 볼까요?</label><input id="payday" class="pd" inputmode="numeric" aria-label="한 달 기준일"></div>
+      <p class="note" style="margin-bottom:0">가계부와 통계의 한 달을 기준일부터 다음 달 기준일 전날까지로 계산해요. 예: 21일이면 11/21~12/20이 "11월"이에요. 생활비 받는 날로 맞추면 편해요. 31처럼 그달에 없는 날이면 그달 마지막 날로 잡아요.</p>
     </section>
     <section>
       <h2>지출 카테고리 <small>오른쪽에서 어느 계좌 돈인지 골라요</small></h2>
@@ -481,7 +481,7 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 const pad=n=>String(n).padStart(2,'0');
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
 const addM=(m,k)=>{let[y,mo]=m.split('-').map(Number);mo+=k;while(mo>12){mo-=12;y++}while(mo<1){mo+=12;y--}return y+'-'+pad(mo)};
-const mLabel=m=>{const[y,mo]=m.split('-');return payday()===1?`${y}년 ${+mo}월`:`${+mo}월 월급 · ${md(pStart(m))}~${md(pEnd(m))}`};
+const mLabel=m=>{const[y,mo]=m.split('-');return payday()===1?`${y}년 ${+mo}월`:`${+mo}월 · ${md(pStart(m))}~${md(pEnd(m))}`};
 const lastDay=m=>{const[y,mo]=m.split('-').map(Number);return new Date(y,mo,0).getDate()};
 const WD='일월화수목금토';
 const dOf=x=>new Date(x+'T00:00');
@@ -611,7 +611,7 @@ function renderPlan(){
   for(const k of['gross','nontax','net','taxAmt','alAmt'])$(k).value=won(p[k]||0);
   $('payday2').value=payday()+'일';
   if(payOpen===null)payOpen=!(p.gross||p.net);
-  $('payBox').hidden=!payOpen;$('payEdit').setAttribute('aria-expanded',payOpen);$('payPill').textContent=`매달 ${payday()}일`;
+  $('payBox').hidden=!payOpen;$('payEdit').setAttribute('aria-expanded',payOpen);$('payPill').textContent=`기준일 ${payday()}일`;
   $('taxOv').checked=!!p.taxOv;$('taxOvBox').hidden=!p.taxOv;
   $('alOn').checked=!!p.alOn;$('alBox').hidden=!p.alOn;$('sumSec').hidden=!p.alOn;
   $('mainList').innerHTML=rowsHTML(p.items,'items');
@@ -1076,7 +1076,7 @@ document.addEventListener('focusout',e=>{const t=e.target;if(t.classList&&t.clas
 document.addEventListener('focusin',e=>{const t=e.target;if(t.classList&&t.classList.contains('pd')){t.placeholder=payday()+'일';t.value='';return}if(t.classList&&t.classList.contains('amt')&&parse(t.value)===0)t.select()});
 document.addEventListener('change',e=>{
   const t=e.target;
-  if(t.classList.contains('pd')){if(!parse(t.value))return;const v=Math.min(31,Math.max(1,parse(t.value)));S.payday=v;month=periodOf(today());t.value=v+'일';save();toast(`월급날을 매달 ${v}일로 정했어요`);return}
+  if(t.classList.contains('pd')){if(!parse(t.value))return;const v=Math.min(31,Math.max(1,parse(t.value)));S.payday=v;month=periodOf(today());t.value=v+'일';save();toast(`한 달 기준일을 매달 ${v}일로 정했어요`);return}
   if(t.id==='planSel'){S.mp[month]=t.value;save();renderBook();return}
   if(t.dataset.catacc!==undefined){const c=t.dataset.catacc;if(t.value)S.catAcc[c]=t.value;else delete S.catAcc[c];save();toast(t.value?`'${c}'는 ${t.value} 계좌 돈으로 계산해요`:`'${c}'는 자기 이름 계좌로 계산해요`);return}
   if(t.dataset.bud!==undefined){const n=t.dataset.bud;S.bud=S.bud.filter(x=>x!==n);if(t.checked)S.bud.push(n);save();if(view==='book')renderBook();return}
